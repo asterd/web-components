@@ -216,3 +216,39 @@ class ExcelExportListWidget extends HTMLElement {
 
 // Registriamo il custom element
 customElements.define('excel-export-list', ExcelExportListWidget);
+
+
+/*
+// 1. Utilizzo dichiarativo con inizializzazione successiva
+
+<authenticated-component 
+    id="myComponent"
+    api-url="https://api.example.com">
+</authenticated-component>
+
+<script>
+    const component = document.getElementById('myComponent');
+    // Imposta il token quando lo hai disponibile
+    component.setAuthToken(token);
+    
+    // Ascolta gli eventi
+    component.addEventListener('auth-ready', () => {
+        console.log('Component ready to make authenticated calls');
+    });
+    
+    component.addEventListener('api-error', (event) => {
+        console.error('API error:', event.detail.error);
+    });
+</script>
+
+
+// 2. Dichiarativo con configurazione
+<authenticated-component id="myApi" api-url="https://api.example.com">
+</authenticated-component>
+
+// Nel tuo codice
+const api = document.getElementById('myApi');
+
+// Opzione A: Token diretto se già lo hai
+api.setAuthToken(existingToken);
+*/
