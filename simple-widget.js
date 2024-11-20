@@ -74,10 +74,11 @@ class SimpleWidget extends HTMLElement {
         // Recupera i parametri user e program
         this.user = this.getAttribute('user');
         this.program = this.getAttribute('program');
+        this.bearer = this.getAttribute('token');
 
-        if (!this.user || !this.program) {
+        if (!this.user || !this.program || !this.bearer) {
             this.shadowRoot.querySelector('#error-message').textContent =
-                'Missing required parameters: user and program.';
+                'Missing required parameters: user, program or token.';
             return;
         }
 
@@ -92,9 +93,14 @@ class SimpleWidget extends HTMLElement {
 
         try {
             errorMessage.textContent = 'Loading...';
+            let token = this.bearer;
             const response = await await fetch(url, {
                 method: 'GET',
-                credentials: 'include'
+                // credentials: 'include'
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json', 
+                }
             });
 
             if (!response.ok) {
