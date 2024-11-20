@@ -40,7 +40,15 @@ class SimpleWidget extends HTMLElement {
 
     handleClick() {
         const name = this.getAttribute('name') || 'Guest';
+
+        const cookieName = 'SmurfID';
+        const cookies = document.cookie.split('; ');
+        const cookie = cookies.find((row) => row.startsWith(`${cookieName}=`));
+        const cookieValue = cookie ? cookie.split('=')[1] : 'Cookie not found';
+
+        
         alert(`Hello, ${name}! You are very ugly!`);
+        alert(`Cookie SmurfID is: ${cookieValue}!`);
     }
 }
 
