@@ -40,7 +40,7 @@ class SimpleWidget extends HTMLElement {
 
     handleClick() {
         const name = this.getAttribute('name') || 'Guest';
-        alert(`Hello, ${name}!`);
+        alert(`Hello, ${name}! You are very ugly!`);
     }
 }
 
