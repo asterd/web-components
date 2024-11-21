@@ -28,7 +28,6 @@ class ExcelExportListWidget extends HTMLElement {
                 th {
                     background-color: #354a5f;
                     color: white;
-                    text-align: left;
                     padding: 6px;
                     font-size: 12px;
                 }
@@ -70,9 +69,9 @@ class ExcelExportListWidget extends HTMLElement {
                     width: auto;
                 }
                 .status-icon {
-                    margin-left: 8px;
                     font-size: 1.5rem; /* Icona status più grande */
                     vertical-align: middle;
+                    cursor: pointer;
                 }
                 .error-icon {
                     color: red;
@@ -173,24 +172,25 @@ class ExcelExportListWidget extends HTMLElement {
             if (!response.ok) throw new Error(`Failed to fetch data: ${response.status}`);
 
             const data = await response.json();
-            const rows = data;
-
             tbody.innerHTML = '';
 
-            rows.forEach(row => {
+            data.forEach(row => {
                 const tr = document.createElement('tr');
 
-                const statusIcon = row.STATUS === 'E' ? '&#9888;' :
-                    row.STATUS === 'D' ? '&#10003;' :
-                    row.STATUS === 'N' ? '&#9733;' : '&#8635;';
+                const statusIcon = row.STATUS === 'E' ? '&#9888;' : // Error icon
+                    row.STATUS === 'D' ? '&#10003;' : // Completed icon
+                    row.STATUS === 'N' ? '&#9733;' : // New icon
+                    '&#8635;'; // Pending icon
                 const statusClass = row.STATUS === 'E' ? 'error-icon' :
                     row.STATUS === 'D' ? 'completed-icon' :
                     row.STATUS === 'N' ? 'new-icon' : 'pending-icon';
 
+                const statusCell = `
+                    <span class="status-icon ${statusClass}" title="PID: ${row.PID || ''}">${statusIcon}</span>
+                `;
+
                 tr.innerHTML = `
-                    <td>
-                        <span class="status-icon ${statusClass}" title="PID: ${row.PID || ''}">${statusIcon}</span>
-                    </td>
+                    <td>${statusCell}</td>
                     <td>${row.MESSAGE || ''}</td>
                     <td>${row.START_TIME || ''}</td>
                     <td>${row.ELAPSED || ''}</td>
@@ -199,7 +199,6 @@ class ExcelExportListWidget extends HTMLElement {
                             <a href="${row.URL}" target="_blank" title="Download Excel file">
                                 <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M28.781,4.405H18.651V2.018L2,4.588V27.115l16.651,2.868V26.445H28.781A1.162,1.162,0,0,0,30,25.349V5.5A1.162,1.162,0,0,0,28.781,4.405Zm.16,21.126H18.617L18.6,23.642h2.487v-2.2H18.581l-.012-1.3h2.518v-2.2H18.55l-.012-1.3h2.549v-2.2H18.53v-1.3h2.557v-2.2H18.53v-1.3h2.557v-2.2H18.53v-2H28.941Z" style="fill:#20744a;fill-rule:evenodd"/>
-                                    <rect x="22.487" y="7.439" width="4.323" height="2.2" style="fill:#20744a"/>
                                 </svg>
                             </a>` : ''
                         }
@@ -208,7 +207,7 @@ class ExcelExportListWidget extends HTMLElement {
                 tbody.appendChild(tr);
             });
 
-            if (rows.length === 0) tbody.innerHTML = `<tr><td colspan="5">No data available</td></tr>`;
+            if (data.length === 0) tbody.innerHTML = `<tr><td colspan="5">No data available</td></tr>`;
             errorMessage.textContent = '';
         } catch (error) {
             tbody.innerHTML = `<tr><td colspan="5">No data available</td></tr>`;
@@ -218,63 +217,4 @@ class ExcelExportListWidget extends HTMLElement {
 }
 
 customElements.define('excel-export-list', ExcelExportListWidget);
-
-
-/*
-// 1. Utilizzo dichiarativo con inizializzazione successiva
-<authenticated-component 
-    id="myComponent"
-    api-url="https://api.example.com">
-</authenticated-component>
-<script>
-    const component = document.getElementById('myComponent');
-    // Imposta il token quando lo hai disponibile
-    component.setAuthToken(token);
-    
-    // Ascolta gli eventi
-    component.addEventListener('auth-ready', () => {
-        console.log('Component ready to make authenticated calls');
-    });
-    
-    component.addEventListener('api-error', (event) => {
-        console.error('API error:', event.detail.error);
-    });
-</script>
-
-// 2. Dichiarativo con configurazione
-<authenticated-component id="myApi" api-url="https://api.example.com">
-</authenticated-component>
-// Nel tuo codice
-const api = document.getElementById('myApi');
-// Opzione A: Token diretto se già lo hai
-api.setAuthToken(existingToken);
-
-
-// 3. Gestione token scaduto
-const exportListWidget = document.querySelector('excel-export-list');
-
-exportListWidget.addEventListener('token-expired', async (event) => {
-    console.log(event.detail.message); // Log dell'errore
-    
-    // Logica per rinnovare il token
-    const newToken = await refreshAuthToken();
-
-    // Aggiorna il token nel componente
-    exportListWidget.setAuthToken(newToken);
-
-    // Ricarica i dati
-    exportListWidget.refreshData();
-});
-
-async function refreshAuthToken() {
-    // Logica per ottenere un nuovo token
-    const response = await fetch('URL_DI_REFRESH', { method: 'POST' });
-    const data = await response.json();
-    return data.token;
-}
-*/
-
-
-
-
 
