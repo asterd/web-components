@@ -175,6 +175,20 @@ class ExcelExportListWidget extends HTMLElement {
             rows.forEach(row => {
                 const tr = document.createElement('tr');
 
+                // build error message cell
+                const errorMsgCell = document.createElement('td');
+                const fullErrorMsg = row.ERROR_MSG || '';
+                const shortErrorMsg = fullErrorMsg.length > 20
+                    ? `${fullErrorMsg.slice(0, 20)}...`
+                    : fullErrorMsg;
+                errorMsgCell.textContent = shortErrorMsg;
+                errorMsgCell.style.cursor = 'pointer';
+                errorMsgCell.title = 'Click to view full message';
+                errorMsgCell.addEventListener('click', () => {
+                    alert(`Full Error Message:\n\n${fullErrorMsg}`);
+                });
+
+                // build excel url cell
                 const urlCell = document.createElement('td');
                 if (row.FILENAME) {
                     const anchor = document.createElement('a');
@@ -202,10 +216,11 @@ class ExcelExportListWidget extends HTMLElement {
                 tr.innerHTML = `
                     <td>${row.PID || ''}</td>
                     <td>${row.STATUS || ''}</td>
-                    <td>${row.ERROR_MSG || ''}</td>
+                    <td></td>
                     <td>${row.TS_START || ''}</td>
                     <td>${row.TS_END || ''}</td>
                 `;
+                tr.childNodes[2].replaceWith(errorMsgCell); 
                 tr.appendChild(urlCell);
                 tbody.appendChild(tr);
             });
