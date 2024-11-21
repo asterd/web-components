@@ -55,6 +55,33 @@ class ExcelExportListWidget extends HTMLElement {
                     max-height: 28px; /* Limita l'altezza massima */
                     width: auto; /* Mantiene le proporzioni */
                 }
+                .error-row {
+                    border-left: 4px solid red;
+                    animation: fadeIn 0.3s ease-in-out;
+                }
+                .completed-row {
+                    border-left: 4px solid green;
+                    animation: fadeIn 0.3s ease-in-out;
+                }
+                .status-icon {
+                    margin-left: 8px;
+                    font-size: 1rem;
+                    vertical-align: middle;
+                }
+                .error-icon {
+                    color: red;
+                }
+                .completed-icon {
+                    color: green;
+                }
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                    }
+                    to {
+                        opacity: 1;
+                    }
+                }
             </style>
             <div class="table-container">
                 <button id="refresh-button">Refresh</button>
@@ -175,6 +202,13 @@ class ExcelExportListWidget extends HTMLElement {
             rows.forEach(row => {
                 const tr = document.createElement('tr');
 
+                // Aggiungi classe in base allo stato
+                if (row.STATUS === 'E') {
+                    tr.classList.add('error-row');
+                } else if (row.STATUS === 'D') {
+                    tr.classList.add('completed-row');
+                }
+
                 // build error message cell
                 const errorMsgCell = document.createElement('td');
                 const fullErrorMsg = row.ERROR_MSG || '';
@@ -215,7 +249,11 @@ class ExcelExportListWidget extends HTMLElement {
 
                 tr.innerHTML = `
                     <td>${row.PID || ''}</td>
-                    <td>${row.STATUS || ''}</td>
+                    <td>
+                        ${row.STATUS || ''}
+                        ${row.STATUS === 'E' ? '<span class="status-icon error-icon" title="Error">&#9888;</span>' : ''}
+                        ${row.STATUS === 'D' ? '<span class="status-icon completed-icon" title="Completed">&#10003;</span>' : ''}
+                    </td>
                     <td></td>
                     <td>${row.TS_START || ''}</td>
                     <td>${row.TS_END || ''}</td>
