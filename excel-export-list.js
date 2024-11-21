@@ -29,11 +29,11 @@ class ExcelExportListWidget extends HTMLElement {
                     background-color: #354a5f; /* Bluette */
                     color: white;
                     text-align: left;
-                    padding: 10px;
-                    font-size: 14px;
+                    padding: 6px;
+                    font-size: 12px;
                 }
                 td {
-                    padding: 8px;
+                    padding: 6px;
                     text-align: left;
                 }
                 tr:nth-child(odd) {
@@ -174,6 +174,7 @@ class ExcelExportListWidget extends HTMLElement {
         const url = `https://websmart.dev.brunellocucinelli.it/bc/api/utils/export/log/generic?username=${this.user}&programName=${this.program}`;
         const errorMessage = this.shadowRoot.querySelector('#error-message');
         const tbody = this.shadowRoot.querySelector('#data-table tbody');
+        const thead = this.shadowRoot.querySelector('#data-table thead');
 
         try {
             errorMessage.textContent = 'Loading...';
