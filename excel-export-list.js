@@ -85,39 +85,14 @@ class ExcelExportListWidget extends HTMLElement {
                     color: orange;
                 }
                 .error-row {
-                    border-right: 4px solid red;
+                    border-left: 4px solid red; /* Bordo a sinistra */
                 }
                 .completed-row {
-                    border-right: 4px solid green;
+                    border-left: 4px solid green; /* Bordo a sinistra */
                 }
                 td.center-icon {
                     text-align: center;
                     vertical-align: middle;
-                }
-                .tooltip {
-                    position: relative;
-                    display: inline-block;
-                    cursor: pointer;
-                }
-                .tooltip .tooltip-text {
-                    visibility: hidden;
-                    width: auto;
-                    background-color: #555;
-                    color: #fff;
-                    text-align: center;
-                    padding: 5px;
-                    border-radius: 4px;
-                    position: absolute;
-                    z-index: 1;
-                    bottom: 125%;
-                    left: 50%;
-                    margin-left: -60px;
-                    opacity: 0;
-                    transition: opacity 0.3s;
-                }
-                .tooltip:hover .tooltip-text {
-                    visibility: visible;
-                    opacity: 1;
                 }
             </style>
             <div class="table-container">
@@ -218,9 +193,6 @@ class ExcelExportListWidget extends HTMLElement {
                     tr.classList.add('completed-row');
                 }
 
-                // Formatta il tempo in HH:mm
-                const elapsedTime = row.ELAPSED ? this.#formatElapsedTime(row.ELAPSED) : '';
-
                 // Icona di status
                 const statusIcon = row.STATUS === 'E' ? '&#9888;' : // Error icon
                     row.STATUS === 'D' ? '&#10003;' : // Completed icon
@@ -230,16 +202,15 @@ class ExcelExportListWidget extends HTMLElement {
                     row.STATUS === 'D' ? 'completed-icon' :
                     row.STATUS === 'N' ? 'new-icon' : 'pending-icon';
 
-                // Tooltip con valore copiabile
                 const statusCell = `
                     <td class="center-icon">
-                        <span class="status-icon ${statusClass}" title="PID: ${row.PID}" onclick="navigator.clipboard.writeText('${row.PID}')">
+                        <span class="status-icon ${statusClass}" title="PID: ${row.PID}">
                             ${statusIcon}
                         </span>
                     </td>
                 `;
 
-                // Messaggio con popup
+                // Messaggio con alert e pulsante copia
                 const fullErrorMsg = row.MESSAGE || '';
                 const shortErrorMsg = fullErrorMsg.length > 25
                     ? `${fullErrorMsg.slice(0, 25)}...`
@@ -250,7 +221,39 @@ class ExcelExportListWidget extends HTMLElement {
                 messageCell.style.cursor = 'pointer';
                 messageCell.title = 'Click to view full message';
                 messageCell.addEventListener('click', () => {
-                    alert(`Full Message:\n\n${fullErrorMsg}`);
+                    const alertBox = document.createElement('div');
+                    alertBox.style.position = 'fixed';
+                    alertBox.style.top = '50%';
+                    alertBox.style.left = '50%';
+                    alertBox.style.transform = 'translate(-50%, -50%)';
+                    alertBox.style.backgroundColor = 'white';
+                    alertBox.style.padding = '20px';
+                    alertBox.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+                    alertBox.style.zIndex = '1000';
+
+                    const msg = document.createElement('p');
+                    msg.textContent = `Full Message: ${fullErrorMsg}`;
+                    alertBox.appendChild(msg);
+
+                    const copyButton = document.createElement('button');
+                    copyButton.textContent = 'Copy Message';
+                    copyButton.style.marginTop = '10px';
+                    copyButton.addEventListener('click', () => {
+                        navigator.clipboard.writeText(fullErrorMsg);
+                        alert('Message copied to clipboard!');
+                    });
+                    alertBox.appendChild(copyButton);
+
+                    const closeButton = document.createElement('button');
+                    closeButton.textContent = 'Close';
+                    closeButton.style.marginTop = '10px';
+                    closeButton.style.marginLeft = '10px';
+                    closeButton.addEventListener('click', () => {
+                        document.body.removeChild(alertBox);
+                    });
+                    alertBox.appendChild(closeButton);
+
+                    document.body.appendChild(alertBox);
                 });
 
                 // Creazione riga
@@ -258,12 +261,19 @@ class ExcelExportListWidget extends HTMLElement {
                     ${statusCell}
                     <td></td>
                     <td>${row.START_TIME || ''}</td>
-                    <td>${elapsedTime}</td>
+                    <td>${row.ELAPSED || ''}</td>
                     <td class="center-icon">
                         ${row.URL ? `
                             <a href="${row.URL}" target="_blank" title="Download Excel file">
                                 <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                                    <title>file_type_excel2</title>
                                     <path d="M28.781,4.405H18.651V2.018L2,4.588V27.115l16.651,2.868V26.445H28.781A1.162,1.162,0,0,0,30,25.349V5.5A1.162,1.162,0,0,0,28.781,4.405Zm.16,21.126H18.617L18.6,23.642h2.487v-2.2H18.581l-.012-1.3h2.518v-2.2H18.55l-.012-1.3h2.549v-2.2H18.53v-1.3h2.557v-2.2H18.53v-1.3h2.557v-2.2H18.53v-2H28.941Z" style="fill:#20744a;fill-rule:evenodd"/>
+                                    <rect x="22.487" y="7.439" width="4.323" height="2.2" style="fill:#20744a"/>
+                                    <rect x="22.487" y="10.94" width="4.323" height="2.2" style="fill:#20744a"/>
+                                    <rect x="22.487" y="14.441" width="4.323" height="2.2" style="fill:#20744a"/>
+                                    <rect x="22.487" y="17.942" width="4.323" height="2.2" style="fill:#20744a"/>
+                                    <rect x="22.487" y="21.443" width="4.323" height="2.2" style="fill:#20744a"/>
+                                    <polygon points="6.347 10.673 8.493 10.55 9.842 14.259 11.436 10.397 13.582 10.274 10.976 15.54 13.582 20.819 11.313 20.666 9.781 16.642 8.248 20.513 6.163 20.329 8.585 15.666 6.347 10.673" style="fill:#ffffff;fill-rule:evenodd"/>
                                 </svg>
                             </a>` : ''
                         }
@@ -279,12 +289,6 @@ class ExcelExportListWidget extends HTMLElement {
             tbody.innerHTML = `<tr><td colspan="5">No data available</td></tr>`;
             errorMessage.textContent = `Error: ${error.message}`;
         }
-    }
-
-    #formatElapsedTime(minutes) {
-        const hours = Math.floor(minutes / 60);
-        const remainingMinutes = minutes % 60;
-        return `${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')}`;
     }
 }
 
