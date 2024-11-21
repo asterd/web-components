@@ -29,16 +29,16 @@ class ExcelExportListWidget extends HTMLElement {
                     background-color: #f4f4f4;
                 }
                 button {
-                    background-color: #007BFF;
+                    background-color: #606060;
                     color: white;
                     border: none;
-                    padding: 10px 15px;
-                    font-size: 14px;
+                    padding: 6px 10px; /* Altezza e larghezza ridotte */
+                    font-size: 12px;
                     cursor: pointer;
                     border-radius: 4px;
                 }
                 button:hover {
-                    background-color: #0056b3;
+                    background-color: #505050;
                 }
                 .error {
                     color: red;
@@ -253,6 +253,7 @@ class ExcelExportListWidget extends HTMLElement {
                         ${row.STATUS || ''}
                         ${row.STATUS === 'E' ? '<span class="status-icon error-icon" title="Error">&#9888;</span>' : ''}
                         ${row.STATUS === 'D' ? '<span class="status-icon completed-icon" title="Completed">&#10003;</span>' : ''}
+                        ${row.STATUS !== 'D' && row.STATUS !== 'E' ? '<span class="status-icon pending-icon" title="Pending">&#8635;</span>' : ''}
                     </td>
                     <td></td>
                     <td>${row.TS_START || ''}</td>
