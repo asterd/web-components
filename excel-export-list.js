@@ -150,6 +150,16 @@ class ExcelExportListWidget extends HTMLElement {
                 headers,
                 credentials: 'include',
             });
+        
+            if (response.status === 401) {
+                // Token scaduto o non valido: emetti un evento
+                this.dispatchEvent(new CustomEvent('token-expired', {
+                    bubbles: true,
+                    composed: true,
+                    detail: { message: 'Token expired or invalid.' }
+                }));
+                throw new Error('Your session has expired. Please refresh your token.');
+            }
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch data: ${response.status}`);
@@ -214,3 +224,33 @@ class ExcelExportListWidget extends HTMLElement {
 
 // Registriamo il custom element
 customElements.define('excel-export-list', ExcelExportListWidget);
+
+
+/*
+const exportListWidget = document.querySelector('excel-export-list');
+
+exportListWidget.addEventListener('token-expired', async (event) => {
+    console.log(event.detail.message); // Log dell'errore
+    
+    // Logica per rinnovare il token
+    const newToken = await refreshAuthToken();
+
+    // Aggiorna il token nel componente
+    exportListWidget.setAuthToken(newToken);
+
+    // Ricarica i dati
+    exportListWidget.refreshData();
+});
+
+async function refreshAuthToken() {
+    // Logica per ottenere un nuovo token
+    const response = await fetch('URL_DI_REFRESH', { method: 'POST' });
+    const data = await response.json();
+    return data.token;
+}
+*/
+
+
+
+
+
