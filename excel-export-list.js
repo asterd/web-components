@@ -65,11 +65,11 @@ class ExcelExportListWidget extends HTMLElement {
                     vertical-align: middle;
                     cursor: pointer;
                     transition: transform 0.2s;
-                    max-height: 20px; /* Icona Excel più piccola */
+                    max-height: 22px; /* Icona Excel leggermente più grande */
                     width: auto;
                 }
                 .status-icon {
-                    font-size: 1.5rem; /* Icona status più grande */
+                    font-size: 1.3rem; /* Icone di status leggermente più piccole */
                     vertical-align: middle;
                     cursor: pointer;
                 }
@@ -84,6 +84,37 @@ class ExcelExportListWidget extends HTMLElement {
                 }
                 .pending-icon {
                     color: orange;
+                }
+                .error-row {
+                    border-right: 4px solid red;
+                }
+                .completed-row {
+                    border-right: 4px solid green;
+                }
+                .tooltip {
+                    position: relative;
+                    display: inline-block;
+                    cursor: pointer;
+                }
+                .tooltip .tooltip-text {
+                    visibility: hidden;
+                    width: auto;
+                    background-color: #555;
+                    color: #fff;
+                    text-align: center;
+                    padding: 5px;
+                    border-radius: 4px;
+                    position: absolute;
+                    z-index: 1;
+                    bottom: 125%; /* Posizionato sopra l'elemento */
+                    left: 50%;
+                    margin-left: -60px;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                }
+                .tooltip:hover .tooltip-text {
+                    visibility: visible;
+                    opacity: 1;
                 }
             </style>
             <div class="table-container">
@@ -177,21 +208,52 @@ class ExcelExportListWidget extends HTMLElement {
             data.forEach(row => {
                 const tr = document.createElement('tr');
 
+                // Aggiunge classi per bordo colorato
+                if (row.STATUS === 'E') {
+                    tr.classList.add('error-row');
+                } else if (row.STATUS === 'D') {
+                    tr.classList.add('completed-row');
+                }
+
+                // Icona di status
                 const statusIcon = row.STATUS === 'E' ? '&#9888;' : // Error icon
                     row.STATUS === 'D' ? '&#10003;' : // Completed icon
-                    row.STATUS === 'N' ? '&#9733;' : // New icon
+                    row.STATUS === 'N' ? '&#43;' : // New icon (plus)
                     '&#8635;'; // Pending icon
                 const statusClass = row.STATUS === 'E' ? 'error-icon' :
                     row.STATUS === 'D' ? 'completed-icon' :
                     row.STATUS === 'N' ? 'new-icon' : 'pending-icon';
 
+                // Tooltip con valore copiabile
                 const statusCell = `
-                    <span class="status-icon ${statusClass}" title="PID: ${row.PID || ''}">${statusIcon}</span>
+                    <span class="status-icon ${statusClass}">
+                        <span class="tooltip" title="PID: ${row.PID}">
+                            ${statusIcon}
+                            <span class="tooltip-text" onclick="navigator.clipboard.writeText('${row.PID}')">
+                                Click to copy PID
+                            </span>
+                        </span>
+                    </span>
                 `;
 
+                // Messaggio con popup
+                const fullErrorMsg = row.MESSAGE || '';
+                const shortErrorMsg = fullErrorMsg.length > 25
+                    ? `${fullErrorMsg.slice(0, 25)}...`
+                    : fullErrorMsg;
+
+                const messageCell = document.createElement('td');
+                messageCell.textContent = shortErrorMsg;
+                messageCell.style.cursor = 'pointer';
+                messageCell.title = 'Click to view full message';
+                messageCell.addEventListener('click', () => {
+                    alert(`Full Message:\n\n${fullErrorMsg}`);
+                });
+
+                // Creazione riga
                 tr.innerHTML = `
                     <td>${statusCell}</td>
-                    <td>${row.MESSAGE || ''}</td>
+                    <td></td>
                     <td>${row.START_TIME || ''}</td>
                     <td>${row.ELAPSED || ''}</td>
                     <td>
