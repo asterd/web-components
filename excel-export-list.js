@@ -26,7 +26,21 @@ class ExcelExportListWidget extends HTMLElement {
                     text-align: left;
                 }
                 th {
-                    background-color: #f4f4f4;
+                    background-color: #354a5f; /* Bluette */
+                    color: white;
+                    text-align: left;
+                    padding: 10px;
+                    font-size: 14px;
+                }
+                td {
+                    padding: 8px;
+                    text-align: left;
+                }
+                tr:nth-child(odd) {
+                    background-color: #f9f9f9;
+                }
+                tr:nth-child(even) {
+                    background-color: #f1f1f1;
                 }
                 button {
                     background-color: #606060;
@@ -197,6 +211,17 @@ class ExcelExportListWidget extends HTMLElement {
 
             // Pulisce il contenuto precedente
             tbody.innerHTML = '';
+            // Imposta gli header personalizzati
+            thead.innerHTML = `
+                <tr>
+                    <th>PID</th>
+                    <th>Stato</th>
+                    <th>Messaggi</th>
+                    <th>Inizio</th>
+                    <th>Fine</th>
+                    <th>File</th>
+                </tr>
+            `;
 
             // Popola la tabella con i nuovi dati
             rows.forEach(row => {
