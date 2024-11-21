@@ -204,7 +204,7 @@ class ExcelExportListWidget extends HTMLElement {
 
                 const statusCell = `
                     <td class="center-icon">
-                        <span class="status-icon ${statusClass}" title="PID: ${row.PID}">
+                        <span class="status-icon ${statusClass}" title="PID: ${row.PID}" onclick="navigator.clipboard.writeText('${row.PID}'); alert('PID Copied!');">
                             ${statusIcon}
                         </span>
                     </td>
