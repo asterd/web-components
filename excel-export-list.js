@@ -105,9 +105,9 @@ class ExcelExportListWidget extends HTMLElement {
                         <tr>
                             <th>PID</th>
                             <th>STATUS</th>
-                            <th>ERROR_MSG</th>
-                            <th>TS_START</th>
-                            <th>TS_END</th>
+                            <th>MESSAGE</th>
+                            <th>START TIME</th>
+                            <th>ELAPSED</th>
                             <th>URL</th>
                         </tr>
                     </thead>
@@ -174,7 +174,7 @@ class ExcelExportListWidget extends HTMLElement {
         const url = `https://websmart.dev.brunellocucinelli.it/bc/api/utils/export/log/generic?username=${this.user}&programName=${this.program}`;
         const errorMessage = this.shadowRoot.querySelector('#error-message');
         const tbody = this.shadowRoot.querySelector('#data-table tbody');
-        const thead = this.shadowRoot.querySelector('#data-table thead');
+        // const thead = this.shadowRoot.querySelector('#data-table thead');
 
         try {
             errorMessage.textContent = 'Loading...';
@@ -212,17 +212,6 @@ class ExcelExportListWidget extends HTMLElement {
 
             // Pulisce il contenuto precedente
             tbody.innerHTML = '';
-            // Imposta gli header personalizzati
-            thead.innerHTML = `
-                <tr>
-                    <th>PID</th>
-                    <th>Stato</th>
-                    <th>Messaggi</th>
-                    <th>Inizio</th>
-                    <th>Fine</th>
-                    <th>File</th>
-                </tr>
-            `;
 
             // Popola la tabella con i nuovi dati
             rows.forEach(row => {
@@ -237,7 +226,7 @@ class ExcelExportListWidget extends HTMLElement {
 
                 // build error message cell
                 const errorMsgCell = document.createElement('td');
-                const fullErrorMsg = row.ERROR_MSG || '';
+                const fullErrorMsg = row.MESSAGE || '';
                 const shortErrorMsg = fullErrorMsg.length > 25
                     ? `${fullErrorMsg.slice(0, 25)}...`
                     : fullErrorMsg;
@@ -250,9 +239,9 @@ class ExcelExportListWidget extends HTMLElement {
 
                 // build excel url cell
                 const urlCell = document.createElement('td');
-                if (row.FILENAME) {
+                if (row.URL) {
                     const anchor = document.createElement('a');
-                    anchor.href = row.FILENAME;
+                    anchor.href = row.URL;
                     anchor.target = '_blank';
                     anchor.download = '';
                     anchor.title = 'Download Excel file';
@@ -282,8 +271,8 @@ class ExcelExportListWidget extends HTMLElement {
                         ${row.STATUS !== 'D' && row.STATUS !== 'E' ? '<span class="status-icon pending-icon" title="Pending">&#8635;</span>' : ''}
                     </td>
                     <td></td>
-                    <td>${row.TS_START || ''}</td>
-                    <td>${row.TS_END || ''}</td>
+                    <td>${row.START_TIME || ''}</td>
+                    <td>${row.ELAPSED || ''}</td>
                 `;
                 tr.replaceChild(errorMsgCell, tr.children[2]);
                 tr.appendChild(urlCell);
