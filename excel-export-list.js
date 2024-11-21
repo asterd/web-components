@@ -57,7 +57,7 @@ class ExcelExportListWidget extends HTMLElement {
                 }
             </style>
             <div class="table-container">
-                <button id="refresh-button" disabled>Refresh</button>
+                <button id="refresh-button">Refresh</button>
                 <div id="error-message" class="error"></div>
                 <table id="data-table">
                     <thead>
@@ -77,7 +77,7 @@ class ExcelExportListWidget extends HTMLElement {
             </div>
         `;
 
-        // Assegna il bottone di refresh
+        // Aggiunge l'evento per il bottone di refresh
         this.shadowRoot
             .querySelector('#refresh-button')
             .addEventListener('click', () => this.refreshData());
@@ -91,10 +91,6 @@ class ExcelExportListWidget extends HTMLElement {
             this.#token = null;
             this.#authHeader = null;
         }
-
-        // Abilita il bottone di refresh
-        const refreshButton = this.shadowRoot.querySelector('#refresh-button');
-        refreshButton.disabled = false;
 
         // Notifica che il componente è pronto
         this.dispatchEvent(new CustomEvent('auth-ready', { bubbles: true, composed: true }));
@@ -111,11 +107,16 @@ class ExcelExportListWidget extends HTMLElement {
         this.program = this.getAttribute('program');
 
         const errorMessage = this.shadowRoot.querySelector('#error-message');
+        const refreshButton = this.shadowRoot.querySelector('#refresh-button');
+
         if (!this.user || !this.program) {
             errorMessage.textContent = 'Missing required parameters: user or program.';
+            refreshButton.disabled = true;
             return;
         }
 
+        // Abilita il tasto Refresh e mostra il messaggio di caricamento
+        refreshButton.disabled = false;
         errorMessage.textContent = 'Loading...';
 
         // Effettua la chiamata iniziale anche senza autenticazione
@@ -123,6 +124,8 @@ class ExcelExportListWidget extends HTMLElement {
     }
 
     refreshData() {
+        const errorMessage = this.shadowRoot.querySelector('#error-message');
+        errorMessage.textContent = 'Refreshing data...';
         this.#fetchAndRenderData();
     }
 
@@ -211,39 +214,3 @@ class ExcelExportListWidget extends HTMLElement {
 
 // Registriamo il custom element
 customElements.define('excel-export-list', ExcelExportListWidget);
-
-
-/*
-// 1. Utilizzo dichiarativo con inizializzazione successiva
-
-<authenticated-component 
-    id="myComponent"
-    api-url="https://api.example.com">
-</authenticated-component>
-
-<script>
-    const component = document.getElementById('myComponent');
-    // Imposta il token quando lo hai disponibile
-    component.setAuthToken(token);
-    
-    // Ascolta gli eventi
-    component.addEventListener('auth-ready', () => {
-        console.log('Component ready to make authenticated calls');
-    });
-    
-    component.addEventListener('api-error', (event) => {
-        console.error('API error:', event.detail.error);
-    });
-</script>
-
-
-// 2. Dichiarativo con configurazione
-<authenticated-component id="myApi" api-url="https://api.example.com">
-</authenticated-component>
-
-// Nel tuo codice
-const api = document.getElementById('myApi');
-
-// Opzione A: Token diretto se già lo hai
-api.setAuthToken(existingToken);
-*/
