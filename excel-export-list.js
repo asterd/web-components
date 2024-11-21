@@ -178,8 +178,8 @@ class ExcelExportListWidget extends HTMLElement {
                 // build error message cell
                 const errorMsgCell = document.createElement('td');
                 const fullErrorMsg = row.ERROR_MSG || '';
-                const shortErrorMsg = fullErrorMsg.length > 20
-                    ? `${fullErrorMsg.slice(0, 20)}...`
+                const shortErrorMsg = fullErrorMsg.length > 25
+                    ? `${fullErrorMsg.slice(0, 25)}...`
                     : fullErrorMsg;
                 errorMsgCell.textContent = shortErrorMsg;
                 errorMsgCell.style.cursor = 'pointer';
@@ -220,7 +220,7 @@ class ExcelExportListWidget extends HTMLElement {
                     <td>${row.TS_START || ''}</td>
                     <td>${row.TS_END || ''}</td>
                 `;
-                tr.childNodes[2].replaceWith(errorMsgCell); 
+                tr.replaceChild(errorMsgCell, tr.children[2]);
                 tr.appendChild(urlCell);
                 tbody.appendChild(tr);
             });
