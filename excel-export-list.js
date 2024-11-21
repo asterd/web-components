@@ -33,7 +33,6 @@ class ExcelExportListWidget extends HTMLElement {
                 }
                 td {
                     padding: 6px;
-                    text-align: left;
                 }
                 tr:nth-child(odd) {
                     background-color: #f9f9f9;
@@ -65,11 +64,11 @@ class ExcelExportListWidget extends HTMLElement {
                     vertical-align: middle;
                     cursor: pointer;
                     transition: transform 0.2s;
-                    max-height: 22px; /* Icona Excel leggermente più grande */
+                    max-height: 22px; /* Icona Excel */
                     width: auto;
                 }
                 .status-icon {
-                    font-size: 1.3rem; /* Icone di status leggermente più piccole */
+                    font-size: 1.3rem;
                     vertical-align: middle;
                     cursor: pointer;
                 }
@@ -91,6 +90,10 @@ class ExcelExportListWidget extends HTMLElement {
                 .completed-row {
                     border-right: 4px solid green;
                 }
+                td.center-icon {
+                    text-align: center;
+                    vertical-align: middle;
+                }
                 .tooltip {
                     position: relative;
                     display: inline-block;
@@ -106,7 +109,7 @@ class ExcelExportListWidget extends HTMLElement {
                     border-radius: 4px;
                     position: absolute;
                     z-index: 1;
-                    bottom: 125%; /* Posizionato sopra l'elemento */
+                    bottom: 125%;
                     left: 50%;
                     margin-left: -60px;
                     opacity: 0;
@@ -215,6 +218,9 @@ class ExcelExportListWidget extends HTMLElement {
                     tr.classList.add('completed-row');
                 }
 
+                // Formatta il tempo in HH:mm
+                const elapsedTime = row.ELAPSED ? this.#formatElapsedTime(row.ELAPSED) : '';
+
                 // Icona di status
                 const statusIcon = row.STATUS === 'E' ? '&#9888;' : // Error icon
                     row.STATUS === 'D' ? '&#10003;' : // Completed icon
@@ -226,14 +232,11 @@ class ExcelExportListWidget extends HTMLElement {
 
                 // Tooltip con valore copiabile
                 const statusCell = `
-                    <span class="status-icon ${statusClass}">
-                        <span class="tooltip" title="PID: ${row.PID}">
+                    <td class="center-icon">
+                        <span class="status-icon ${statusClass}" title="PID: ${row.PID}" onclick="navigator.clipboard.writeText('${row.PID}')">
                             ${statusIcon}
-                            <span class="tooltip-text" onclick="navigator.clipboard.writeText('${row.PID}')">
-                                Click to copy PID
-                            </span>
                         </span>
-                    </span>
+                    </td>
                 `;
 
                 // Messaggio con popup
@@ -252,11 +255,11 @@ class ExcelExportListWidget extends HTMLElement {
 
                 // Creazione riga
                 tr.innerHTML = `
-                    <td>${statusCell}</td>
+                    ${statusCell}
                     <td></td>
                     <td>${row.START_TIME || ''}</td>
-                    <td>${row.ELAPSED || ''}</td>
-                    <td>
+                    <td>${elapsedTime}</td>
+                    <td class="center-icon">
                         ${row.URL ? `
                             <a href="${row.URL}" target="_blank" title="Download Excel file">
                                 <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -266,6 +269,7 @@ class ExcelExportListWidget extends HTMLElement {
                         }
                     </td>
                 `;
+                tr.replaceChild(messageCell, tr.children[1]);
                 tbody.appendChild(tr);
             });
 
@@ -276,7 +280,12 @@ class ExcelExportListWidget extends HTMLElement {
             errorMessage.textContent = `Error: ${error.message}`;
         }
     }
+
+    #formatElapsedTime(minutes) {
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
+        return `${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')}`;
+    }
 }
 
 customElements.define('excel-export-list', ExcelExportListWidget);
-
