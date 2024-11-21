@@ -131,7 +131,7 @@ class ExcelExportListWidget extends HTMLElement {
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Authorization': this.#authHeader,
+                    // 'Authorization': this.#authHeader,
                     'Content-Type': 'application/json',
                 },
                 credentials: 'include',
