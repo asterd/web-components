@@ -134,6 +134,7 @@ class ExcelExportListWidget extends HTMLElement {
                     'Authorization': this.#authHeader,
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include',
             });
 
             if (!response.ok) {
