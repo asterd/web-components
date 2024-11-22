@@ -19,29 +19,6 @@ class ExcelExportListWidget extends HTMLElement {
                     color: #354a5f;
                     margin-bottom: 10px;
                 }
-                .actions {
-                    display: flex;
-                    align-items: center;
-                    margin-top: 10px;
-                }
-                .actions button {
-                    background-color: #606060;
-                    color: white;
-                    border: none;
-                    padding: 6px 10px;
-                    font-size: 12px;
-                    cursor: pointer;
-                    border-radius: 4px;
-                    margin-right: 10px;
-                }
-                .actions button:hover {
-                    background-color: #505050;
-                }
-                .actions .message {
-                    font-size: 14px;
-                    color: red;
-                    margin-left: 10px;
-                }
                 .scrollable-table-container {
                     max-height: var(--table-height, 400px);
                     overflow-y: auto;
@@ -92,17 +69,34 @@ class ExcelExportListWidget extends HTMLElement {
                     color: orange;
                 }
                 .excel-icon {
-                    width: 22px; /* Dimensioni SVG Excel */
+                    width: 22px;
                     height: 22px;
                     cursor: pointer;
+                }
+                .actions {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-top: 10px;
+                }
+                .actions button {
+                    background-color: #606060;
+                    color: white;
+                    border: none;
+                    padding: 6px 10px;
+                    font-size: 12px;
+                    cursor: pointer;
+                    border-radius: 4px;
+                }
+                .actions button:hover {
+                    background-color: #505050;
+                }
+                .actions .message {
+                    font-size: 14px;
+                    color: red;
                 }
             </style>
             <div class="table-container">
                 <h2 id="table-title">Elenco elaborazioni utente: <span id="user"></span> - applicazione: <span id="program"></span></h2>
-                <div class="actions">
-                    <button id="refresh-button">Refresh</button>
-                    <span id="message-box" class="message"></span>
-                </div>
                 <div class="scrollable-table-container">
                     <table id="data-table">
                         <thead>
@@ -118,6 +112,10 @@ class ExcelExportListWidget extends HTMLElement {
                             <tr><td colspan="5">No data available</td></tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="actions">
+                    <button id="refresh-button">Refresh</button>
+                    <span id="message-box" class="message"></span>
                 </div>
             </div>
         `;
@@ -151,12 +149,10 @@ class ExcelExportListWidget extends HTMLElement {
 
         const userElement = this.shadowRoot.querySelector('#user');
         const programElement = this.shadowRoot.querySelector('#program');
-        const refreshButton = this.shadowRoot.querySelector('#refresh-button');
 
         if (!this.user || !this.program) {
             userElement.textContent = 'N/A';
             programElement.textContent = 'N/A';
-            refreshButton.disabled = true;
             this.#showMessage('Parametri mancanti: utente o applicazione.', 'error');
             return;
         }
@@ -165,7 +161,6 @@ class ExcelExportListWidget extends HTMLElement {
         programElement.textContent = this.program;
 
         // Caricamento automatico all'avvio
-        refreshButton.disabled = false;
         this.#fetchAndRenderData();
     }
 
@@ -221,7 +216,7 @@ class ExcelExportListWidget extends HTMLElement {
                     <td>${row.ELAPSED || ''}</td>
                     <td>
                         ${row.URL ? `<a href="${row.URL}" target="_blank" title="Download Excel">
-                            <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                            <svg class="excel-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                                 <title>file_type_excel2</title>
                                 <path d="M28.781,4.405H18.651V2.018L2,4.588V27.115l16.651,2.868V26.445H28.781A1.162,1.162,0,0,0,30,25.349V5.5A1.162,1.162,0,0,0,28.781,4.405Zm.16,21.126H18.617L18.6,23.642h2.487v-2.2H18.581l-.012-1.3h2.518v-2.2H18.55l-.012-1.3h2.549v-2.2H18.53v-1.3h2.557v-2.2H18.53v-1.3h2.557v-2.2H18.53v-2H28.941Z" style="fill:#20744a;fill-rule:evenodd"/>
                                 <rect x="22.487" y="7.439" width="4.323" height="2.2" style="fill:#20744a"/>
