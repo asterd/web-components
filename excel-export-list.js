@@ -198,7 +198,6 @@ class ExcelExportListWidget extends HTMLElement {
         this.env = this.getAttribute('env') || 'dev';
         this.pageSize = Math.min(parseInt(this.getAttribute('pageSize') || 10, 10), 30);
         this.tableHeight = this.getAttribute('tableHeight') || '400px';
-        this.retry = true;
 
         // Configura il baseUrl in base all'env
         switch (this.env) {
