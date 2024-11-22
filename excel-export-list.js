@@ -1,6 +1,7 @@
 class ExcelExportListWidget extends HTMLElement {
     #token;
     #authHeader;
+    #baseUrl;
 
     constructor() {
         super();
@@ -12,7 +13,7 @@ class ExcelExportListWidget extends HTMLElement {
                 .table-container {
                     font-family: 'Roboto', sans-serif;
                     margin: 20px 0;
-                    color: #222222; /* Font più scuro */
+                    color: #222222;
                 }
                 h2 {
                     font-size: 14px;
@@ -30,29 +31,34 @@ class ExcelExportListWidget extends HTMLElement {
                     width: 100%;
                     border-collapse: collapse;
                 }
+                thead {
+                    background-color: #ffffff;
+                    border-bottom: 2px solid #ddd;
+                    position: sticky;
+                    top: 0;
+                    z-index: 2;
+                }
                 thead th {
-                    background-color: #ffffff; /* Header bianco */
-                    font-size: 12px; /* Titoli tabella più piccoli */
+                    font-size: 12px;
                     text-align: left;
                     padding: 8px;
-                    border-bottom: 2px solid #ddd; /* Bordo sotto */
-                    text-transform: capitalize; /* Titoli con iniziale maiuscola */
+                    text-transform: capitalize;
                 }
                 tbody td {
                     padding: 10px;
-                    border-top: 1px solid #ccc; /* Linea di separazione più scura */
+                    border-top: 1px solid #ccc;
                 }
                 tbody td.text-left {
-                    text-align: left; /* Colonne testuali allineate a sinistra */
+                    text-align: left;
                 }
                 tbody td.center {
-                    text-align: center; /* Colonne icone centrate */
+                    text-align: center;
                 }
                 tbody tr {
-                    background-color: #ffffff; /* Righe tutte bianche */
+                    background-color: #ffffff;
                 }
                 tbody tr:hover {
-                    background-color: #f9f9f9; /* Righe evidenziate al passaggio del mouse */
+                    background-color: #f9f9f9;
                 }
                 .row-border.status-e {
                     border-left: 4px solid red;
@@ -81,6 +87,15 @@ class ExcelExportListWidget extends HTMLElement {
                     height: 22px;
                     cursor: pointer;
                 }
+                .retry-icon {
+                    width: 22px;
+                    height: 22px;
+                    cursor: pointer;
+                    fill: #20744A;
+                }
+                .retry-icon:hover {
+                    fill: #185c36;
+                }
                 .actions {
                     display: flex;
                     justify-content: space-between;
@@ -93,8 +108,8 @@ class ExcelExportListWidget extends HTMLElement {
                     cursor: pointer;
                 }
                 .actions button svg {
-                    width: 20px;
-                    height: 20px;
+                    width: 24px;
+                    height: 24px;
                     fill: #606060;
                 }
                 .actions button:hover svg {
@@ -140,10 +155,11 @@ class ExcelExportListWidget extends HTMLElement {
                                 <th>start time</th>
                                 <th>elapsed</th>
                                 <th>download</th>
+                                <th class="retry-column" style="display: none;">retry</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="5">No data available</td></tr>
+                            <tr><td colspan="6">No data available</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -180,8 +196,22 @@ class ExcelExportListWidget extends HTMLElement {
     connectedCallback() {
         this.user = this.getAttribute('user');
         this.program = this.getAttribute('program');
+        this.retry = this.getAttribute('retry') === 'true';
+        this.env = this.getAttribute('env') || 'dev';
         this.pageSize = Math.min(parseInt(this.getAttribute('pageSize') || 10, 10), 30);
         this.tableHeight = this.getAttribute('tableHeight') || '400px';
+
+        // Configura il baseUrl in base all'env
+        switch (this.env) {
+            case 'qa':
+                this.#baseUrl = 'https://websmart-qa.dev.brunellocucinelli.it/bc';
+                break;
+            case 'prod':
+                this.#baseUrl = 'https://websmart.brunellocucinelli.it/bc';
+                break;
+            default:
+                this.#baseUrl = 'https://websmart.dev.brunellocucinelli.it/bc';
+        }
 
         if (parseInt(this.pageSize) > 30) {
             this.pageSize = 30;
@@ -205,6 +235,11 @@ class ExcelExportListWidget extends HTMLElement {
         userElement.textContent = this.user;
         programElement.textContent = this.program;
 
+        // Abilita la colonna retry se necessario
+        if (this.retry) {
+            this.shadowRoot.querySelector('.retry-column').style.display = 'table-cell';
+        }
+
         // Caricamento automatico all'avvio
         this.#fetchAndRenderData();
     }
@@ -215,7 +250,7 @@ class ExcelExportListWidget extends HTMLElement {
     }
 
     async #fetchAndRenderData() {
-        const url = `https://websmart.dev.brunellocucinelli.it/bc/api/utils/export/log/generic?username=${this.user}&programName=${this.program}&pageSize=${this.pageSize}`;
+        const url = `${this.#baseUrl}/api/utils/export/log/generic?username=${this.user}&programName=${this.program}&pageSize=${this.pageSize}`;
         const tbody = this.shadowRoot.querySelector('#data-table tbody');
 
         try {
@@ -234,7 +269,6 @@ class ExcelExportListWidget extends HTMLElement {
                 const tr = document.createElement('tr');
                 tr.className = row.STATUS === 'E' ? 'row-border status-e' : row.STATUS === 'D' ? 'row-border status-d' : '';
 
-                // Icona di stato con supporto al copia PID
                 const statusIcon = row.STATUS === 'E' ? '&#9888;' :
                                    row.STATUS === 'D' ? '&#10003;' :
                                    row.STATUS === 'N' ? '&#43;' : '&#8635;';
@@ -256,6 +290,13 @@ class ExcelExportListWidget extends HTMLElement {
                 messageCell.className = 'text-left';
                 messageCell.addEventListener('click', () => this.#showPopup(row.MESSAGE || 'No message available'));
 
+                const retryCell = this.retry && (row.STATUS === 'E' || row.STATUS === 'N') ? `
+                    <td class="center">
+                        <svg class="retry-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" title="Retry" onclick="this.dispatchEvent(new CustomEvent('retry', { detail: '${row.PID}', bubbles: true }));">
+                            <path d="M8 5v2c-1.48.54-2.75 1.51-3.75 2.75L4 11.5C5.56 9.36 7.72 8 10 8c4.08 0 7.44 3.05 7.93 7h-2.08l3.64 3.64 1.41-1.41L20 15h-4c-.54-4.1-3.7-7.35-7.84-7.94L9 7H7c.47-.54.99-1.04 1.5-1.5zm3.84 10.94c-.5-.05-1.08-.09-1.59-.15-.4-.03-.76-.08-1.14-.18a4.35 4.35 0 0 1-1.06-.34c-.34-.16-.66-.33-.96-.54L8.47 15H9.5c.62.14 1.18.39 1.64.8.27.23.5.49.72.78.23.32.47.67.65 1.05.2.42.35.87.5 1.33h1.31zM19 12a7 7 0 0 0-7-7c-.73 0-1.44.11-2.12.33a7.92 7.92 0 0 0-1.54.67c.66-.84 1.51-1.51 2.49-2 .47-.23.96-.4 1.47-.54.56-.16 1.13-.27 1.72-.34A8.92 8.92 0 0 1 17.67 4H19a9 9 0 0 0-8-4 9 9 0 0 0-4 1A9 9 0 0 0 5.34 2a8.92 8.92 0 0 1 7.66 6.94A8.92 8.92 0 0 1 15 19a9 9 0 0 0 1-.16l.27.01h1a9.92 9.92 0 0 0-.24 0 7 7 0 0 0-7-7z"/>
+                        </svg>
+                    </td>` : `<td></td>`;
+
                 tr.innerHTML = `
                     ${statusCell}
                     <td class="text-left"></td>
@@ -268,15 +309,16 @@ class ExcelExportListWidget extends HTMLElement {
                             </svg>
                         </a>` : ''}
                     </td>
+                    ${retryCell}
                 `;
                 tr.replaceChild(messageCell, tr.children[1]);
                 tbody.appendChild(tr);
             });
 
-            if (!data.length) tbody.innerHTML = `<tr><td colspan="5">No data available</td></tr>`;
+            if (!data.length) tbody.innerHTML = `<tr><td colspan="6">No data available</td></tr>`;
             this.#hideMessage();
         } catch (error) {
-            tbody.innerHTML = `<tr><td colspan="5">No data available</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6">No data available</td></tr>`;
             this.#showMessage(error.message, 'error');
         }
     }
