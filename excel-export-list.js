@@ -30,6 +30,9 @@ class ExcelExportListWidget extends HTMLElement {
                     color: white;
                     padding: 6px;
                     font-size: 12px;
+                    position: sticky;
+                    top: 0;
+                    z-index: 1;
                 }
                 td {
                     padding: 6px;
@@ -94,24 +97,37 @@ class ExcelExportListWidget extends HTMLElement {
                     text-align: center;
                     vertical-align: middle;
                 }
+                .scrollable-table-container {
+                    max-height: 400px;
+                    overflow-y: auto;
+                }
+                #refresh-container {
+                    margin-top: 10px;
+                    text-align: left;
+                }
             </style>
             <div class="table-container">
-                <button id="refresh-button">Refresh</button>
+                <h2 id="table-title">Elenco elaborazioni utente: <span id="user"></span> - applicazione: <span id="program"></span></h2>
+                <div class="scrollable-table-container">
+                    <table id="data-table">
+                        <thead>
+                            <tr>
+                                <th>STATUS</th>
+                                <th>MESSAGE</th>
+                                <th>START TIME</th>
+                                <th>ELAPSED</th>
+                                <th>URL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5">No data available</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="refresh-container">
+                    <button id="refresh-button">Refresh</button>
+                </div>
                 <div id="error-message" class="error"></div>
-                <table id="data-table">
-                    <thead>
-                        <tr>
-                            <th>STATUS</th>
-                            <th>MESSAGE</th>
-                            <th>START TIME</th>
-                            <th>ELAPSED</th>
-                            <th>URL</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="5">No data available</td></tr>
-                    </tbody>
-                </table>
             </div>
         `;
 
@@ -140,6 +156,7 @@ class ExcelExportListWidget extends HTMLElement {
     connectedCallback() {
         this.user = this.getAttribute('user');
         this.program = this.getAttribute('program');
+        this.pageSize = this.getAttribute('pageSize') || 10;
 
         const errorMessage = this.shadowRoot.querySelector('#error-message');
         const refreshButton = this.shadowRoot.querySelector('#refresh-button');
@@ -149,6 +166,10 @@ class ExcelExportListWidget extends HTMLElement {
             refreshButton.disabled = true;
             return;
         }
+
+        // Imposta il titolo
+        this.shadowRoot.querySelector('#user').textContent = this.user;
+        this.shadowRoot.querySelector('#program').textContent = this.program;
 
         refreshButton.disabled = false;
         errorMessage.textContent = 'Loading...';
@@ -162,7 +183,7 @@ class ExcelExportListWidget extends HTMLElement {
     }
 
     async #fetchAndRenderData() {
-        const url = `https://websmart.dev.brunellocucinelli.it/bc/api/utils/export/log/generic?username=${this.user}&programName=${this.program}`;
+        const url = `https://websmart.dev.brunellocucinelli.it/bc/api/utils/export/log/generic?username=${this.user}&programName=${this.program}&pageSize=${this.pageSize}`;
         const errorMessage = this.shadowRoot.querySelector('#error-message');
         const tbody = this.shadowRoot.querySelector('#data-table tbody');
 
@@ -186,21 +207,18 @@ class ExcelExportListWidget extends HTMLElement {
             data.forEach(row => {
                 const tr = document.createElement('tr');
 
-                // Aggiunge classi per bordo colorato
                 if (row.STATUS === 'E') {
                     tr.classList.add('error-row');
                 } else if (row.STATUS === 'D') {
                     tr.classList.add('completed-row');
                 }
 
-                // Icona di status
-                const statusIcon = row.STATUS === 'E' ? '&#9888;' : // Error icon
-                    row.STATUS === 'D' ? '&#10003;' : // Completed icon
-                    row.STATUS === 'N' ? '&#43;' : // New icon (plus)
-                    '&#8635;'; // Pending icon
+                const statusIcon = row.STATUS === 'E' ? '&#9888;' : 
+                                   row.STATUS === 'D' ? '&#10003;' : 
+                                   row.STATUS === 'N' ? '&#43;' : '&#8635;';
                 const statusClass = row.STATUS === 'E' ? 'error-icon' :
-                    row.STATUS === 'D' ? 'completed-icon' :
-                    row.STATUS === 'N' ? 'new-icon' : 'pending-icon';
+                                    row.STATUS === 'D' ? 'completed-icon' :
+                                    row.STATUS === 'N' ? 'new-icon' : 'pending-icon';
 
                 const statusCell = `
                     <td class="center-icon">
@@ -210,7 +228,6 @@ class ExcelExportListWidget extends HTMLElement {
                     </td>
                 `;
 
-                // Messaggio con alert e pulsante copia
                 const fullErrorMsg = row.MESSAGE || '';
                 const shortErrorMsg = fullErrorMsg.length > 25
                     ? `${fullErrorMsg.slice(0, 25)}...`
@@ -221,42 +238,9 @@ class ExcelExportListWidget extends HTMLElement {
                 messageCell.style.cursor = 'pointer';
                 messageCell.title = 'Click to view full message';
                 messageCell.addEventListener('click', () => {
-                    const alertBox = document.createElement('div');
-                    alertBox.style.position = 'fixed';
-                    alertBox.style.top = '50%';
-                    alertBox.style.left = '50%';
-                    alertBox.style.transform = 'translate(-50%, -50%)';
-                    alertBox.style.backgroundColor = 'white';
-                    alertBox.style.padding = '20px';
-                    alertBox.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-                    alertBox.style.zIndex = '1000';
-
-                    const msg = document.createElement('p');
-                    msg.textContent = `Full Message: ${fullErrorMsg}`;
-                    alertBox.appendChild(msg);
-
-                    const copyButton = document.createElement('button');
-                    copyButton.textContent = 'Copy Message';
-                    copyButton.style.marginTop = '10px';
-                    copyButton.addEventListener('click', () => {
-                        navigator.clipboard.writeText(fullErrorMsg);
-                        alert('Message copied to clipboard!');
-                    });
-                    alertBox.appendChild(copyButton);
-
-                    const closeButton = document.createElement('button');
-                    closeButton.textContent = 'Close';
-                    closeButton.style.marginTop = '10px';
-                    closeButton.style.marginLeft = '10px';
-                    closeButton.addEventListener('click', () => {
-                        document.body.removeChild(alertBox);
-                    });
-                    alertBox.appendChild(closeButton);
-
-                    document.body.appendChild(alertBox);
+                    alert(`Full Message: ${fullErrorMsg}`);
                 });
 
-                // Creazione riga
                 tr.innerHTML = `
                     ${statusCell}
                     <td></td>
@@ -293,3 +277,4 @@ class ExcelExportListWidget extends HTMLElement {
 }
 
 customElements.define('excel-export-list', ExcelExportListWidget);
+
