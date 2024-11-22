@@ -12,94 +12,91 @@ class ExcelExportListWidget extends HTMLElement {
         this.shadowRoot.innerHTML = `
             <style>
                 .table-container {
-                    font-family: Arial, sans-serif;
+                    font-family: 'Roboto', sans-serif;
                     margin: 20px 0;
+                }
+                h2 {
+                    font-size: 16px;
+                    font-weight: 500;
+                    color: #354a5f;
+                    margin-bottom: 10px;
+                }
+                .message {
+                    margin: 10px 0;
+                    padding: 8px;
+                    font-size: 14px;
+                    color: #fff;
+                    background-color: #354a5f;
+                    border-radius: 4px;
+                    text-align: center;
+                }
+                .scrollable-table-container {
+                    max-height: var(--table-height, 400px); /* Altezza parametrica */
+                    overflow-y: auto;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
                 }
                 table {
                     width: 100%;
                     border-collapse: collapse;
-                    margin-top: 10px;
                 }
-                th, td {
-                    border: 1px solid #ddd;
-                    padding: 8px;
+                thead th {
+                    background-color: #f5f5f5;
+                    font-size: 14px;
                     text-align: left;
-                }
-                th {
-                    background-color: #354a5f;
-                    color: white;
-                    padding: 6px;
-                    font-size: 12px;
+                    padding: 10px;
                     position: sticky;
                     top: 0;
                     z-index: 1;
                 }
-                td {
-                    padding: 6px;
+                tbody td {
+                    padding: 10px;
+                    border-top: 1px solid #ddd;
                 }
-                tr:nth-child(odd) {
+                tbody tr:nth-child(even) {
                     background-color: #f9f9f9;
                 }
-                tr:nth-child(even) {
-                    background-color: #f1f1f1;
+                tbody tr:hover {
+                    background-color: #eaeaea;
                 }
-                button {
-                    background-color: #606060;
+                .icon {
+                    font-size: 1.2rem;
+                    cursor: pointer;
+                }
+                .icon.error {
+                    color: red;
+                }
+                .icon.completed {
+                    color: green;
+                }
+                .icon.new {
+                    color: blue;
+                }
+                .icon.pending {
+                    color: orange;
+                }
+                .popup {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: white;
+                    padding: 20px;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                    z-index: 1000;
+                    border-radius: 8px;
+                }
+                .popup button {
+                    margin-top: 10px;
+                    background-color: #354a5f;
                     color: white;
                     border: none;
-                    padding: 6px 10px;
-                    font-size: 12px;
+                    padding: 10px;
                     cursor: pointer;
                     border-radius: 4px;
                 }
-                button:hover {
-                    background-color: #505050;
-                }
-                .error {
-                    color: red;
-                    margin-top: 10px;
-                }
-                a {
-                    text-decoration: none;
-                    color: inherit;
-                }
-                a svg {
-                    vertical-align: middle;
-                    cursor: pointer;
-                    transition: transform 0.2s;
-                    max-height: 22px; /* Icona Excel */
-                    width: auto;
-                }
-                .status-icon {
-                    font-size: 1.3rem;
-                    vertical-align: middle;
-                    cursor: pointer;
-                }
-                .error-icon {
-                    color: red;
-                }
-                .completed-icon {
-                    color: green;
-                }
-                .new-icon {
-                    color: blue;
-                }
-                .pending-icon {
-                    color: orange;
-                }
-                .error-row {
-                    border-left: 4px solid red; /* Bordo a sinistra */
-                }
-                .completed-row {
-                    border-left: 4px solid green; /* Bordo a sinistra */
-                }
-                td.center-icon {
-                    text-align: center;
-                    vertical-align: middle;
-                }
-                .scrollable-table-container {
-                    max-height: 400px;
-                    overflow-y: auto;
+                .popup button:hover {
+                    background-color: #2a3e4e;
                 }
                 #refresh-container {
                     margin-top: 10px;
@@ -108,6 +105,7 @@ class ExcelExportListWidget extends HTMLElement {
             </style>
             <div class="table-container">
                 <h2 id="table-title">Elenco elaborazioni utente: <span id="user"></span> - applicazione: <span id="program"></span></h2>
+                <div id="message-box" class="message" style="display: none;"></div>
                 <div class="scrollable-table-container">
                     <table id="data-table">
                         <thead>
@@ -116,7 +114,7 @@ class ExcelExportListWidget extends HTMLElement {
                                 <th>MESSAGE</th>
                                 <th>START TIME</th>
                                 <th>ELAPSED</th>
-                                <th>URL</th>
+                                <th>DOWNLOAD</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -127,11 +125,9 @@ class ExcelExportListWidget extends HTMLElement {
                 <div id="refresh-container">
                     <button id="refresh-button">Refresh</button>
                 </div>
-                <div id="error-message" class="error"></div>
             </div>
         `;
 
-        // Aggiunge l'evento per il bottone di refresh
         this.shadowRoot
             .querySelector('#refresh-button')
             .addEventListener('click', () => this.refreshData());
@@ -146,8 +142,6 @@ class ExcelExportListWidget extends HTMLElement {
             this.#authHeader = null;
         }
 
-        this.dispatchEvent(new CustomEvent('auth-ready', { bubbles: true, composed: true }));
-
         if (this.user && this.program) {
             this.#fetchAndRenderData();
         }
@@ -157,48 +151,37 @@ class ExcelExportListWidget extends HTMLElement {
         this.user = this.getAttribute('user');
         this.program = this.getAttribute('program');
         this.pageSize = this.getAttribute('pageSize') || 10;
+        this.tableHeight = this.getAttribute('tableHeight') || '400px';
 
-        const errorMessage = this.shadowRoot.querySelector('#error-message');
-        const refreshButton = this.shadowRoot.querySelector('#refresh-button');
+        this.shadowRoot.style.setProperty('--table-height', this.tableHeight);
 
         if (!this.user || !this.program) {
-            errorMessage.textContent = 'Missing required parameters: user or program.';
-            refreshButton.disabled = true;
+            this.#showMessage('Missing required parameters: user or program.', 'error');
             return;
         }
 
-        // Imposta il titolo
         this.shadowRoot.querySelector('#user').textContent = this.user;
         this.shadowRoot.querySelector('#program').textContent = this.program;
 
-        refreshButton.disabled = false;
-        errorMessage.textContent = 'Loading...';
         this.#fetchAndRenderData();
     }
 
     refreshData() {
-        const errorMessage = this.shadowRoot.querySelector('#error-message');
-        errorMessage.textContent = 'Refreshing data...';
+        this.#showMessage('Refreshing data...', 'info');
         this.#fetchAndRenderData();
     }
 
     async #fetchAndRenderData() {
         const url = `https://websmart.dev.brunellocucinelli.it/bc/api/utils/export/log/generic?username=${this.user}&programName=${this.program}&pageSize=${this.pageSize}`;
-        const errorMessage = this.shadowRoot.querySelector('#error-message');
         const tbody = this.shadowRoot.querySelector('#data-table tbody');
 
         try {
-            errorMessage.textContent = 'Loading...';
+            this.#showMessage('Loading data...', 'info');
 
             const headers = { 'Content-Type': 'application/json' };
             if (this.#authHeader) headers['Authorization'] = this.#authHeader;
 
-            const response = await fetch(url, { method: 'GET', headers, credentials: 'include' });
-            if (response.status === 401) {
-                this.dispatchEvent(new CustomEvent('token-expired', { bubbles: true, composed: true, detail: { message: 'Token expired or invalid.' } }));
-                throw new Error('Your session has expired. Please refresh your token.');
-            }
-
+            const response = await fetch(url, { method: 'GET', headers });
             if (!response.ok) throw new Error(`Failed to fetch data: ${response.status}`);
 
             const data = await response.json();
@@ -207,74 +190,79 @@ class ExcelExportListWidget extends HTMLElement {
             data.forEach(row => {
                 const tr = document.createElement('tr');
 
-                if (row.STATUS === 'E') {
-                    tr.classList.add('error-row');
-                } else if (row.STATUS === 'D') {
-                    tr.classList.add('completed-row');
-                }
-
-                const statusIcon = row.STATUS === 'E' ? '&#9888;' : 
-                                   row.STATUS === 'D' ? '&#10003;' : 
-                                   row.STATUS === 'N' ? '&#43;' : '&#8635;';
-                const statusClass = row.STATUS === 'E' ? 'error-icon' :
-                                    row.STATUS === 'D' ? 'completed-icon' :
-                                    row.STATUS === 'N' ? 'new-icon' : 'pending-icon';
-
-                const statusCell = `
-                    <td class="center-icon">
-                        <span class="status-icon ${statusClass}" title="PID: ${row.PID}" onclick="navigator.clipboard.writeText('${row.PID}'); alert('PID Copied!');">
-                            ${statusIcon}
-                        </span>
-                    </td>
-                `;
-
-                const fullErrorMsg = row.MESSAGE || '';
-                const shortErrorMsg = fullErrorMsg.length > 25
-                    ? `${fullErrorMsg.slice(0, 25)}...`
-                    : fullErrorMsg;
+                const statusIcon = row.STATUS === 'E' ? '✖' : 
+                                   row.STATUS === 'D' ? '✔' : 
+                                   row.STATUS === 'N' ? '+' : '…';
+                const statusClass = row.STATUS === 'E' ? 'error' :
+                                    row.STATUS === 'D' ? 'completed' :
+                                    row.STATUS === 'N' ? 'new' : 'pending';
 
                 const messageCell = document.createElement('td');
-                messageCell.textContent = shortErrorMsg;
+                messageCell.textContent = row.MESSAGE?.slice(0, 25) + '...';
                 messageCell.style.cursor = 'pointer';
-                messageCell.title = 'Click to view full message';
-                messageCell.addEventListener('click', () => {
-                    alert(`Full Message: ${fullErrorMsg}`);
-                });
+                messageCell.addEventListener('click', () => this.#showPopup(row.MESSAGE || 'No message available'));
 
                 tr.innerHTML = `
-                    ${statusCell}
+                    <td><span class="icon ${statusClass}">${statusIcon}</span></td>
                     <td></td>
                     <td>${row.START_TIME || ''}</td>
                     <td>${row.ELAPSED || ''}</td>
-                    <td class="center-icon">
-                        ${row.URL ? `
-                            <a href="${row.URL}" target="_blank" title="Download Excel file">
-                                <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                                    <title>file_type_excel2</title>
-                                    <path d="M28.781,4.405H18.651V2.018L2,4.588V27.115l16.651,2.868V26.445H28.781A1.162,1.162,0,0,0,30,25.349V5.5A1.162,1.162,0,0,0,28.781,4.405Zm.16,21.126H18.617L18.6,23.642h2.487v-2.2H18.581l-.012-1.3h2.518v-2.2H18.55l-.012-1.3h2.549v-2.2H18.53v-1.3h2.557v-2.2H18.53v-1.3h2.557v-2.2H18.53v-2H28.941Z" style="fill:#20744a;fill-rule:evenodd"/>
-                                    <rect x="22.487" y="7.439" width="4.323" height="2.2" style="fill:#20744a"/>
-                                    <rect x="22.487" y="10.94" width="4.323" height="2.2" style="fill:#20744a"/>
-                                    <rect x="22.487" y="14.441" width="4.323" height="2.2" style="fill:#20744a"/>
-                                    <rect x="22.487" y="17.942" width="4.323" height="2.2" style="fill:#20744a"/>
-                                    <rect x="22.487" y="21.443" width="4.323" height="2.2" style="fill:#20744a"/>
-                                    <polygon points="6.347 10.673 8.493 10.55 9.842 14.259 11.436 10.397 13.582 10.274 10.976 15.54 13.582 20.819 11.313 20.666 9.781 16.642 8.248 20.513 6.163 20.329 8.585 15.666 6.347 10.673" style="fill:#ffffff;fill-rule:evenodd"/>
-                                </svg>
-                            </a>` : ''
-                        }
-                    </td>
+                    <td>${row.URL ? `<a href="${row.URL}" target="_blank">
+                        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                            <title>file_type_excel2</title>
+                            <path d="M28.781,4.405H18.651V2.018L2,4.588V27.115l16.651,2.868V26.445H28.781A1.162,1.162,0,0,0,30,25.349V5.5A1.162,1.162,0,0,0,28.781,4.405Zm.16,21.126H18.617L18.6,23.642h2.487v-2.2H18.581l-.012-1.3h2.518v-2.2H18.55l-.012-1.3h2.549v-2.2H18.53v-1.3h2.557v-2.2H18.53v-1.3h2.557v-2.2H18.53v-2H28.941Z" style="fill:#20744a;fill-rule:evenodd"/>
+                            <rect x="22.487" y="7.439" width="4.323" height="2.2" style="fill:#20744a"/>
+                            <rect x="22.487" y="10.94" width="4.323" height="2.2" style="fill:#20744a"/>
+                            <rect x="22.487" y="14.441" width="4.323" height="2.2" style="fill:#20744a"/>
+                            <rect x="22.487" y="17.942" width="4.323" height="2.2" style="fill:#20744a"/>
+                            <rect x="22.487" y="21.443" width="4.323" height="2.2" style="fill:#20744a"/>
+                            <polygon points="6.347 10.673 8.493 10.55 9.842 14.259 11.436 10.397 13.582 10.274 10.976 15.54 13.582 20.819 11.313 20.666 9.781 16.642 8.248 20.513 6.163 20.329 8.585 15.666 6.347 10.673" style="fill:#ffffff;fill-rule:evenodd"/>
+                        </svg>
+                    </a>` : ''}</td>
                 `;
                 tr.replaceChild(messageCell, tr.children[1]);
                 tbody.appendChild(tr);
             });
 
-            if (data.length === 0) tbody.innerHTML = `<tr><td colspan="5">No data available</td></tr>`;
-            errorMessage.textContent = '';
+            if (!data.length) tbody.innerHTML = `<tr><td colspan="5">No data available</td></tr>`;
+            this.#hideMessage();
         } catch (error) {
             tbody.innerHTML = `<tr><td colspan="5">No data available</td></tr>`;
-            errorMessage.textContent = `Error: ${error.message}`;
+            this.#showMessage(error.message, 'error');
         }
+    }
+
+    #showMessage(message, type) {
+        const messageBox = this.shadowRoot.querySelector('#message-box');
+        messageBox.textContent = message;
+        messageBox.style.display = 'block';
+        messageBox.style.backgroundColor = type === 'error' ? 'red' : '#354a5f';
+    }
+
+    #hideMessage() {
+        const messageBox = this.shadowRoot.querySelector('#message-box');
+        messageBox.style.display = 'none';
+    }
+
+    #showPopup(message) {
+        const popup = document.createElement('div');
+        popup.className = 'popup';
+        popup.innerHTML = `
+            <p>${message}</p>
+            <button id="copy-button">Copy</button>
+            <button id="close-button">Close</button>
+        `;
+        this.shadowRoot.appendChild(popup);
+
+        popup.querySelector('#copy-button').addEventListener('click', () => {
+            navigator.clipboard.writeText(message);
+            alert('Message copied!');
+        });
+
+        popup.querySelector('#close-button').addEventListener('click', () => {
+            this.shadowRoot.removeChild(popup);
+        });
     }
 }
 
 customElements.define('excel-export-list', ExcelExportListWidget);
-
