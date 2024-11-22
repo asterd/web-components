@@ -37,6 +37,7 @@ class ExcelExportListWidget extends HTMLElement {
                     position: sticky;
                     top: 0;
                     z-index: 1;
+                    border-bottom: 2px solid #ddd;
                 }
                 tbody td {
                     padding: 10px;
@@ -73,6 +74,12 @@ class ExcelExportListWidget extends HTMLElement {
                     height: 22px;
                     cursor: pointer;
                 }
+                .row-border.status-e {
+                    border-left: 4px solid red;
+                }
+                .row-border.status-d {
+                    border-left: 4px solid green;
+                }
                 .actions {
                     display: flex;
                     justify-content: space-between;
@@ -93,6 +100,30 @@ class ExcelExportListWidget extends HTMLElement {
                 .actions .message {
                     font-size: 14px;
                     color: red;
+                }
+                .popup {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: white;
+                    padding: 20px;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                    z-index: 1000;
+                    border-radius: 8px;
+                    min-width: 300px;
+                }
+                .popup button {
+                    margin-top: 10px;
+                    background-color: #354a5f;
+                    color: white;
+                    border: none;
+                    padding: 10px;
+                    cursor: pointer;
+                    border-radius: 4px;
+                }
+                .popup button:hover {
+                    background-color: #2a3e4e;
                 }
             </style>
             <div class="table-container">
@@ -145,7 +176,9 @@ class ExcelExportListWidget extends HTMLElement {
         this.pageSize = this.getAttribute('pageSize') || 10;
         this.tableHeight = this.getAttribute('tableHeight') || '400px';
 
-        this.shadowRoot.style.setProperty('--table-height', this.tableHeight);
+        if (this.tableHeight) {
+            this.style.setProperty('--table-height', this.tableHeight);
+        }
 
         const userElement = this.shadowRoot.querySelector('#user');
         const programElement = this.shadowRoot.querySelector('#program');
@@ -187,6 +220,7 @@ class ExcelExportListWidget extends HTMLElement {
 
             data.forEach(row => {
                 const tr = document.createElement('tr');
+                tr.className = row.STATUS === 'E' ? 'row-border status-e' : row.STATUS === 'D' ? 'row-border status-d' : '';
 
                 // Icona di stato con supporto al copia PID
                 const statusIcon = row.STATUS === 'E' ? '&#9888;' :
@@ -217,14 +251,7 @@ class ExcelExportListWidget extends HTMLElement {
                     <td>
                         ${row.URL ? `<a href="${row.URL}" target="_blank" title="Download Excel">
                             <svg class="excel-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                <title>file_type_excel2</title>
-                                <path d="M28.781,4.405H18.651V2.018L2,4.588V27.115l16.651,2.868V26.445H28.781A1.162,1.162,0,0,0,30,25.349V5.5A1.162,1.162,0,0,0,28.781,4.405Zm.16,21.126H18.617L18.6,23.642h2.487v-2.2H18.581l-.012-1.3h2.518v-2.2H18.55l-.012-1.3h2.549v-2.2H18.53v-1.3h2.557v-2.2H18.53v-1.3h2.557v-2.2H18.53v-2H28.941Z" style="fill:#20744a;fill-rule:evenodd"/>
-                                <rect x="22.487" y="7.439" width="4.323" height="2.2" style="fill:#20744a"/>
-                                <rect x="22.487" y="10.94" width="4.323" height="2.2" style="fill:#20744a"/>
-                                <rect x="22.487" y="14.441" width="4.323" height="2.2" style="fill:#20744a"/>
-                                <rect x="22.487" y="17.942" width="4.323" height="2.2" style="fill:#20744a"/>
-                                <rect x="22.487" y="21.443" width="4.323" height="2.2" style="fill:#20744a"/>
-                                <polygon points="6.347 10.673 8.493 10.55 9.842 14.259 11.436 10.397 13.582 10.274 10.976 15.54 13.582 20.819 11.313 20.666 9.781 16.642 8.248 20.513 6.163 20.329 8.585 15.666 6.347 10.673" style="fill:#ffffff;fill-rule:evenodd"/>
+                                <path fill="#20744A" d="M19 2H8c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-4.9 15h-2.2l-1.4-2.1-1.4 2.1H7.7l2.3-3.5-2.2-3.5h2.2l1.4 2.1 1.4-2.1h2.2l-2.3 3.5 2.3 3.5z"></path>
                             </svg>
                         </a>` : ''}
                     </td>
