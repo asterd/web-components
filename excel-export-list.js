@@ -165,9 +165,7 @@ class ExcelExportListWidget extends HTMLElement {
                 </div>
                 <div class="actions">
                     <button id="refresh-button" title="Refresh">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6a6.005 6.005 0 0 1-7.39 5.85l-1.15 1.53C11.32 20.79 13 22 15 22c4.42 0 8-3.58 8-8s-3.58-8-8-8zM4.89 7.39L3.5 5.86C1.87 7.42 1 9.58 1 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6 0-1.49.55-2.85 1.48-3.91z"/>
-                        </svg>
+                        <svg fill="#000000" width="22px" height="22px" viewBox="-1.5 -2.5 24 24" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin" class="jam jam-refresh"><path d='M17.83 4.194l.42-1.377a1 1 0 1 1 1.913.585l-1.17 3.825a1 1 0 0 1-1.248.664l-3.825-1.17a1 1 0 1 1 .585-1.912l1.672.511A7.381 7.381 0 0 0 3.185 6.584l-.26.633a1 1 0 1 1-1.85-.758l.26-.633A9.381 9.381 0 0 1 17.83 4.194zM2.308 14.807l-.327 1.311a1 1 0 1 1-1.94-.484l.967-3.88a1 1 0 0 1 1.265-.716l3.828.954a1 1 0 0 1-.484 1.941l-1.786-.445a7.384 7.384 0 0 0 13.216-1.792 1 1 0 1 1 1.906.608 9.381 9.381 0 0 1-5.38 5.831 9.386 9.386 0 0 1-11.265-3.328z' /></svg>
                     </button>
                     <span id="message-box" class="message"></span>
                 </div>
@@ -306,7 +304,7 @@ class ExcelExportListWidget extends HTMLElement {
                     <td class="center">
                         ${row.URL ? `<a href="${row.URL}" target="_blank" title="Download Excel">
                             <svg class="excel-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                <path fill="#20744A" d="M19 2H8c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-4.9 15h-2.2l-1.4-2.1-1.4 2.1H7.7l2.3-3.5-2.2-3.5h2.2l1.4 2.1 1.4-2.1h2.2l-2.3 3.5 2.3 3.5z"></path>
+                                <path d="M0.076 0.055 0.055 0.066v0.33l0.021 0.012 0.247 -0.165V0.22zM0.083 0.371V0.092l0.209 0.139z"/><path fill-rule="evenodd" clip-rule="evenodd" d="m0.165 0.404 0.241 -0.161V0.22L0.165 0.059V0.092l0.209 0.139L0.165 0.371z"/>
                             </svg>
                         </a>` : ''}
                     </td>
