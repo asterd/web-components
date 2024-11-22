@@ -19,12 +19,28 @@ class ExcelExportListWidget extends HTMLElement {
                     color: #354a5f;
                     margin-bottom: 10px;
                 }
-                .message {
-                    margin: 10px 0;
-                    padding: 8px;
+                .actions {
+                    display: flex;
+                    align-items: center;
+                    margin-top: 10px;
+                }
+                .actions button {
+                    background-color: #606060;
+                    color: white;
+                    border: none;
+                    padding: 6px 10px;
+                    font-size: 12px;
+                    cursor: pointer;
+                    border-radius: 4px;
+                    margin-right: 10px;
+                }
+                .actions button:hover {
+                    background-color: #505050;
+                }
+                .actions .message {
                     font-size: 14px;
                     color: red;
-                    text-align: center;
+                    margin-left: 10px;
                 }
                 .scrollable-table-container {
                     max-height: var(--table-height, 400px);
@@ -38,16 +54,20 @@ class ExcelExportListWidget extends HTMLElement {
                 }
                 thead th {
                     background-color: #f5f5f5;
-                    font-size: 14px;
+                    font-size: 12px; /* Titoli tabella più piccoli */
                     text-align: left;
-                    padding: 10px;
+                    padding: 8px;
                     position: sticky;
                     top: 0;
                     z-index: 1;
                 }
                 tbody td {
                     padding: 10px;
+                    text-align: center; /* Centra le icone */
                     border-top: 1px solid #ddd;
+                }
+                tbody td.text-left {
+                    text-align: left; /* Colonne testuali allineate a sinistra */
                 }
                 tbody tr:nth-child(even) {
                     background-color: #f9f9f9;
@@ -55,57 +75,34 @@ class ExcelExportListWidget extends HTMLElement {
                 tbody tr:hover {
                     background-color: #eaeaea;
                 }
-                .icon {
+                .status-icon {
                     font-size: 1.2rem;
                     cursor: pointer;
                 }
-                .icon.error {
+                .status-icon.error {
                     color: red;
                 }
-                .icon.completed {
+                .status-icon.completed {
                     color: green;
                 }
-                .icon.new {
+                .status-icon.new {
                     color: blue;
                 }
-                .icon.pending {
+                .status-icon.pending {
                     color: orange;
                 }
-                .popup {
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background-color: white;
-                    padding: 20px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                    z-index: 1000;
-                    border-radius: 8px;
-                }
-                .popup button {
-                    margin-top: 10px;
-                    background-color: #354a5f;
-                    color: white;
-                    border: none;
-                    padding: 10px;
-                    cursor: pointer;
-                    border-radius: 4px;
-                }
-                .popup button:hover {
-                    background-color: #2a3e4e;
-                }
-                #refresh-container {
-                    margin-top: 10px;
-                    text-align: left;
-                }
                 .excel-icon {
-                    width: 16px;
-                    height: 16px;
+                    width: 22px; /* Dimensioni SVG Excel */
+                    height: 22px;
+                    cursor: pointer;
                 }
             </style>
             <div class="table-container">
                 <h2 id="table-title">Elenco elaborazioni utente: <span id="user"></span> - applicazione: <span id="program"></span></h2>
-                <div id="message-box" class="message" style="display: none;">Caricamento...</div>
+                <div class="actions">
+                    <button id="refresh-button">Refresh</button>
+                    <span id="message-box" class="message"></span>
+                </div>
                 <div class="scrollable-table-container">
                     <table id="data-table">
                         <thead>
@@ -121,9 +118,6 @@ class ExcelExportListWidget extends HTMLElement {
                             <tr><td colspan="5">No data available</td></tr>
                         </tbody>
                     </table>
-                </div>
-                <div id="refresh-container">
-                    <button id="refresh-button">Refresh</button>
                 </div>
             </div>
         `;
@@ -155,19 +149,28 @@ class ExcelExportListWidget extends HTMLElement {
 
         this.shadowRoot.style.setProperty('--table-height', this.tableHeight);
 
+        const userElement = this.shadowRoot.querySelector('#user');
+        const programElement = this.shadowRoot.querySelector('#program');
+        const refreshButton = this.shadowRoot.querySelector('#refresh-button');
+
         if (!this.user || !this.program) {
+            userElement.textContent = 'N/A';
+            programElement.textContent = 'N/A';
+            refreshButton.disabled = true;
             this.#showMessage('Parametri mancanti: utente o applicazione.', 'error');
             return;
         }
 
-        this.shadowRoot.querySelector('#user').textContent = this.user;
-        this.shadowRoot.querySelector('#program').textContent = this.program;
+        userElement.textContent = this.user;
+        programElement.textContent = this.program;
 
+        // Caricamento automatico all'avvio
+        refreshButton.disabled = false;
         this.#fetchAndRenderData();
     }
 
     refreshData() {
-        this.#showMessage('Ricaricamento dati...', 'info');
+        this.#showMessage('Ricaricamento in corso...', 'info');
         this.#fetchAndRenderData();
     }
 
@@ -176,13 +179,13 @@ class ExcelExportListWidget extends HTMLElement {
         const tbody = this.shadowRoot.querySelector('#data-table tbody');
 
         try {
-            this.#showMessage('Caricamento...', 'info');
+            this.#showMessage('Caricamento in corso...', 'info');
 
             const headers = { 'Content-Type': 'application/json' };
             if (this.#authHeader) headers['Authorization'] = this.#authHeader;
 
             const response = await fetch(url, { method: 'GET', headers });
-            if (!response.ok) throw new Error(`Errore durante il caricamento dei dati: ${response.status}`);
+            if (!response.ok) throw new Error(`Errore durante il caricamento: ${response.status}`);
 
             const data = await response.json();
             tbody.innerHTML = '';
@@ -190,12 +193,21 @@ class ExcelExportListWidget extends HTMLElement {
             data.forEach(row => {
                 const tr = document.createElement('tr');
 
-                const statusIcon = row.STATUS === 'E' ? '&#9888;' : 
-                                   row.STATUS === 'D' ? '&#10003;' : 
+                // Icona di stato con supporto al copia PID
+                const statusIcon = row.STATUS === 'E' ? '&#9888;' :
+                                   row.STATUS === 'D' ? '&#10003;' :
                                    row.STATUS === 'N' ? '&#43;' : '&#8635;';
                 const statusClass = row.STATUS === 'E' ? 'error' :
                                     row.STATUS === 'D' ? 'completed' :
                                     row.STATUS === 'N' ? 'new' : 'pending';
+
+                const statusCell = `
+                    <td>
+                        <span class="status-icon ${statusClass}" title="PID: ${row.PID}" onclick="navigator.clipboard.writeText('${row.PID}'); alert('PID copiato: ${row.PID}');">
+                            ${statusIcon}
+                        </span>
+                    </td>
+                `;
 
                 const messageCell = document.createElement('td');
                 messageCell.textContent = row.MESSAGE?.slice(0, 25) + '...';
@@ -203,22 +215,24 @@ class ExcelExportListWidget extends HTMLElement {
                 messageCell.addEventListener('click', () => this.#showPopup(row.MESSAGE || 'No message available'));
 
                 tr.innerHTML = `
-                    <td><span class="icon ${statusClass}">${statusIcon}</span></td>
-                    <td></td>
+                    ${statusCell}
+                    <td class="text-left"></td>
                     <td>${row.START_TIME || ''}</td>
                     <td>${row.ELAPSED || ''}</td>
-                    <td>${row.URL ? `<a href="${row.URL}" target="_blank">
-                        <svg class="excel-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                            <title>file_type_excel2</title>
-                            <path d="M28.781,4.405H18.651V2.018L2,4.588V27.115l16.651,2.868V26.445H28.781A1.162,1.162,0,0,0,30,25.349V5.5A1.162,1.162,0,0,0,28.781,4.405Zm.16,21.126H18.617L18.6,23.642h2.487v-2.2H18.581l-.012-1.3h2.518v-2.2H18.55l-.012-1.3h2.549v-2.2H18.53v-1.3h2.557v-2.2H18.53v-1.3h2.557v-2.2H18.53v-2H28.941Z" style="fill:#20744a;fill-rule:evenodd"/>
-                            <rect x="22.487" y="7.439" width="4.323" height="2.2" style="fill:#20744a"/>
-                            <rect x="22.487" y="10.94" width="4.323" height="2.2" style="fill:#20744a"/>
-                            <rect x="22.487" y="14.441" width="4.323" height="2.2" style="fill:#20744a"/>
-                            <rect x="22.487" y="17.942" width="4.323" height="2.2" style="fill:#20744a"/>
-                            <rect x="22.487" y="21.443" width="4.323" height="2.2" style="fill:#20744a"/>
-                            <polygon points="6.347 10.673 8.493 10.55 9.842 14.259 11.436 10.397 13.582 10.274 10.976 15.54 13.582 20.819 11.313 20.666 9.781 16.642 8.248 20.513 6.163 20.329 8.585 15.666 6.347 10.673" style="fill:#ffffff;fill-rule:evenodd"/>
-                        </svg>
-                    </a>` : ''}</td>
+                    <td>
+                        ${row.URL ? `<a href="${row.URL}" target="_blank" title="Download Excel">
+                            <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                                <title>file_type_excel2</title>
+                                <path d="M28.781,4.405H18.651V2.018L2,4.588V27.115l16.651,2.868V26.445H28.781A1.162,1.162,0,0,0,30,25.349V5.5A1.162,1.162,0,0,0,28.781,4.405Zm.16,21.126H18.617L18.6,23.642h2.487v-2.2H18.581l-.012-1.3h2.518v-2.2H18.55l-.012-1.3h2.549v-2.2H18.53v-1.3h2.557v-2.2H18.53v-1.3h2.557v-2.2H18.53v-2H28.941Z" style="fill:#20744a;fill-rule:evenodd"/>
+                                <rect x="22.487" y="7.439" width="4.323" height="2.2" style="fill:#20744a"/>
+                                <rect x="22.487" y="10.94" width="4.323" height="2.2" style="fill:#20744a"/>
+                                <rect x="22.487" y="14.441" width="4.323" height="2.2" style="fill:#20744a"/>
+                                <rect x="22.487" y="17.942" width="4.323" height="2.2" style="fill:#20744a"/>
+                                <rect x="22.487" y="21.443" width="4.323" height="2.2" style="fill:#20744a"/>
+                                <polygon points="6.347 10.673 8.493 10.55 9.842 14.259 11.436 10.397 13.582 10.274 10.976 15.54 13.582 20.819 11.313 20.666 9.781 16.642 8.248 20.513 6.163 20.329 8.585 15.666 6.347 10.673" style="fill:#ffffff;fill-rule:evenodd"/>
+                            </svg>
+                        </a>` : ''}
+                    </td>
                 `;
                 tr.replaceChild(messageCell, tr.children[1]);
                 tbody.appendChild(tr);
@@ -235,13 +249,12 @@ class ExcelExportListWidget extends HTMLElement {
     #showMessage(message, type) {
         const messageBox = this.shadowRoot.querySelector('#message-box');
         messageBox.textContent = message;
-        messageBox.style.display = 'block';
-        messageBox.style.color = type === 'error' ? 'red' : '#354a5f';
+        messageBox.style.color = type === 'error' ? 'red' : 'black';
     }
 
     #hideMessage() {
         const messageBox = this.shadowRoot.querySelector('#message-box');
-        messageBox.style.display = 'none';
+        messageBox.textContent = '';
     }
 
     #showPopup(message) {
