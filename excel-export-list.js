@@ -12,6 +12,7 @@ class ExcelExportListWidget extends HTMLElement {
                 .table-container {
                     font-family: 'Roboto', sans-serif;
                     margin: 20px 0;
+                    color: #222222; /* Font più scuro */
                 }
                 h2 {
                     font-size: 14px;
@@ -30,28 +31,34 @@ class ExcelExportListWidget extends HTMLElement {
                     border-collapse: collapse;
                 }
                 thead th {
-                    background-color: #f5f5f5;
+                    background-color: #ffffff; /* Header bianco */
                     font-size: 12px; /* Titoli tabella più piccoli */
                     text-align: left;
                     padding: 8px;
-                    position: sticky;
-                    top: 0;
-                    z-index: 1;
-                    border-bottom: 2px solid #ddd;
+                    border-bottom: 2px solid #ddd; /* Bordo sotto */
+                    text-transform: capitalize; /* Titoli con iniziale maiuscola */
                 }
                 tbody td {
                     padding: 10px;
-                    text-align: center; /* Centra le icone */
-                    border-top: 1px solid #ddd;
+                    border-top: 1px solid #ccc; /* Linea di separazione più scura */
                 }
                 tbody td.text-left {
                     text-align: left; /* Colonne testuali allineate a sinistra */
                 }
-                tbody tr:nth-child(even) {
-                    background-color: #f9f9f9;
+                tbody td.center {
+                    text-align: center; /* Colonne icone centrate */
+                }
+                tbody tr {
+                    background-color: #ffffff; /* Righe tutte bianche */
                 }
                 tbody tr:hover {
-                    background-color: #eaeaea;
+                    background-color: #f9f9f9; /* Righe evidenziate al passaggio del mouse */
+                }
+                .row-border.status-e {
+                    border-left: 4px solid red;
+                }
+                .row-border.status-d {
+                    border-left: 4px solid green;
                 }
                 .status-icon {
                     font-size: 1.2rem;
@@ -74,28 +81,24 @@ class ExcelExportListWidget extends HTMLElement {
                     height: 22px;
                     cursor: pointer;
                 }
-                .row-border.status-e {
-                    border-left: 4px solid red;
-                }
-                .row-border.status-d {
-                    border-left: 4px solid green;
-                }
                 .actions {
                     display: flex;
                     justify-content: space-between;
+                    align-items: center;
                     margin-top: 10px;
                 }
                 .actions button {
-                    background-color: #606060;
-                    color: white;
+                    background: none;
                     border: none;
-                    padding: 6px 10px;
-                    font-size: 12px;
                     cursor: pointer;
-                    border-radius: 4px;
                 }
-                .actions button:hover {
-                    background-color: #505050;
+                .actions button svg {
+                    width: 20px;
+                    height: 20px;
+                    fill: #606060;
+                }
+                .actions button:hover svg {
+                    fill: #505050;
                 }
                 .actions .message {
                     font-size: 14px;
@@ -132,11 +135,11 @@ class ExcelExportListWidget extends HTMLElement {
                     <table id="data-table">
                         <thead>
                             <tr>
-                                <th>STATUS</th>
-                                <th>MESSAGE</th>
-                                <th>START TIME</th>
-                                <th>ELAPSED</th>
-                                <th>DOWNLOAD</th>
+                                <th>status</th>
+                                <th>message</th>
+                                <th>start time</th>
+                                <th>elapsed</th>
+                                <th>download</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -145,7 +148,11 @@ class ExcelExportListWidget extends HTMLElement {
                     </table>
                 </div>
                 <div class="actions">
-                    <button id="refresh-button">Refresh</button>
+                    <button id="refresh-button" title="Refresh">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6a6.005 6.005 0 0 1-7.39 5.85l-1.15 1.53C11.32 20.79 13 22 15 22c4.42 0 8-3.58 8-8s-3.58-8-8-8zM4.89 7.39L3.5 5.86C1.87 7.42 1 9.58 1 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6 0-1.49.55-2.85 1.48-3.91z"/>
+                        </svg>
+                    </button>
                     <span id="message-box" class="message"></span>
                 </div>
             </div>
@@ -173,8 +180,13 @@ class ExcelExportListWidget extends HTMLElement {
     connectedCallback() {
         this.user = this.getAttribute('user');
         this.program = this.getAttribute('program');
-        this.pageSize = this.getAttribute('pageSize') || 10;
+        this.pageSize = Math.min(parseInt(this.getAttribute('pageSize') || 10, 10), 30);
         this.tableHeight = this.getAttribute('tableHeight') || '400px';
+
+        if (parseInt(this.pageSize) > 30) {
+            this.pageSize = 30;
+            this.#showMessage('Il numero massimo di righe per pagina è 30. Valore impostato automaticamente.', 'error');
+        }
 
         if (this.tableHeight) {
             this.style.setProperty('--table-height', this.tableHeight);
@@ -231,7 +243,7 @@ class ExcelExportListWidget extends HTMLElement {
                                     row.STATUS === 'N' ? 'new' : 'pending';
 
                 const statusCell = `
-                    <td>
+                    <td class="center">
                         <span class="status-icon ${statusClass}" title="PID: ${row.PID}" onclick="navigator.clipboard.writeText('${row.PID}'); alert('PID copiato: ${row.PID}');">
                             ${statusIcon}
                         </span>
@@ -241,14 +253,15 @@ class ExcelExportListWidget extends HTMLElement {
                 const messageCell = document.createElement('td');
                 messageCell.textContent = row.MESSAGE?.slice(0, 25) + '...';
                 messageCell.style.cursor = 'pointer';
+                messageCell.className = 'text-left';
                 messageCell.addEventListener('click', () => this.#showPopup(row.MESSAGE || 'No message available'));
 
                 tr.innerHTML = `
                     ${statusCell}
                     <td class="text-left"></td>
-                    <td>${row.START_TIME || ''}</td>
-                    <td>${row.ELAPSED || ''}</td>
-                    <td>
+                    <td class="text-left">${row.START_TIME || ''}</td>
+                    <td class="text-left">${row.ELAPSED || ''}</td>
+                    <td class="center">
                         ${row.URL ? `<a href="${row.URL}" target="_blank" title="Download Excel">
                             <svg class="excel-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                                 <path fill="#20744A" d="M19 2H8c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-4.9 15h-2.2l-1.4-2.1-1.4 2.1H7.7l2.3-3.5-2.2-3.5h2.2l1.4 2.1 1.4-2.1h2.2l-2.3 3.5 2.3 3.5z"></path>
