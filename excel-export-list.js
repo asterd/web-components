@@ -5,10 +5,8 @@ class ExcelExportListWidget extends HTMLElement {
     constructor() {
         super();
 
-        // Creiamo lo shadow DOM
         this.attachShadow({ mode: 'open' });
 
-        // Template HTML base
         this.shadowRoot.innerHTML = `
             <style>
                 .table-container {
@@ -16,8 +14,8 @@ class ExcelExportListWidget extends HTMLElement {
                     margin: 20px 0;
                 }
                 h2 {
-                    font-size: 16px;
-                    font-weight: 500;
+                    font-size: 14px;
+                    font-weight: bold;
                     color: #354a5f;
                     margin-bottom: 10px;
                 }
@@ -25,13 +23,11 @@ class ExcelExportListWidget extends HTMLElement {
                     margin: 10px 0;
                     padding: 8px;
                     font-size: 14px;
-                    color: #fff;
-                    background-color: #354a5f;
-                    border-radius: 4px;
+                    color: red;
                     text-align: center;
                 }
                 .scrollable-table-container {
-                    max-height: var(--table-height, 400px); /* Altezza parametrica */
+                    max-height: var(--table-height, 400px);
                     overflow-y: auto;
                     border: 1px solid #ddd;
                     border-radius: 4px;
@@ -102,10 +98,14 @@ class ExcelExportListWidget extends HTMLElement {
                     margin-top: 10px;
                     text-align: left;
                 }
+                .excel-icon {
+                    width: 16px;
+                    height: 16px;
+                }
             </style>
             <div class="table-container">
                 <h2 id="table-title">Elenco elaborazioni utente: <span id="user"></span> - applicazione: <span id="program"></span></h2>
-                <div id="message-box" class="message" style="display: none;"></div>
+                <div id="message-box" class="message" style="display: none;">Caricamento...</div>
                 <div class="scrollable-table-container">
                     <table id="data-table">
                         <thead>
@@ -156,7 +156,7 @@ class ExcelExportListWidget extends HTMLElement {
         this.shadowRoot.style.setProperty('--table-height', this.tableHeight);
 
         if (!this.user || !this.program) {
-            this.#showMessage('Missing required parameters: user or program.', 'error');
+            this.#showMessage('Parametri mancanti: utente o applicazione.', 'error');
             return;
         }
 
@@ -167,7 +167,7 @@ class ExcelExportListWidget extends HTMLElement {
     }
 
     refreshData() {
-        this.#showMessage('Refreshing data...', 'info');
+        this.#showMessage('Ricaricamento dati...', 'info');
         this.#fetchAndRenderData();
     }
 
@@ -176,13 +176,13 @@ class ExcelExportListWidget extends HTMLElement {
         const tbody = this.shadowRoot.querySelector('#data-table tbody');
 
         try {
-            this.#showMessage('Loading data...', 'info');
+            this.#showMessage('Caricamento...', 'info');
 
             const headers = { 'Content-Type': 'application/json' };
             if (this.#authHeader) headers['Authorization'] = this.#authHeader;
 
             const response = await fetch(url, { method: 'GET', headers });
-            if (!response.ok) throw new Error(`Failed to fetch data: ${response.status}`);
+            if (!response.ok) throw new Error(`Errore durante il caricamento dei dati: ${response.status}`);
 
             const data = await response.json();
             tbody.innerHTML = '';
@@ -190,9 +190,9 @@ class ExcelExportListWidget extends HTMLElement {
             data.forEach(row => {
                 const tr = document.createElement('tr');
 
-                const statusIcon = row.STATUS === 'E' ? '✖' : 
-                                   row.STATUS === 'D' ? '✔' : 
-                                   row.STATUS === 'N' ? '+' : '…';
+                const statusIcon = row.STATUS === 'E' ? '&#9888;' : 
+                                   row.STATUS === 'D' ? '&#10003;' : 
+                                   row.STATUS === 'N' ? '&#43;' : '&#8635;';
                 const statusClass = row.STATUS === 'E' ? 'error' :
                                     row.STATUS === 'D' ? 'completed' :
                                     row.STATUS === 'N' ? 'new' : 'pending';
@@ -208,7 +208,7 @@ class ExcelExportListWidget extends HTMLElement {
                     <td>${row.START_TIME || ''}</td>
                     <td>${row.ELAPSED || ''}</td>
                     <td>${row.URL ? `<a href="${row.URL}" target="_blank">
-                        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                        <svg class="excel-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                             <title>file_type_excel2</title>
                             <path d="M28.781,4.405H18.651V2.018L2,4.588V27.115l16.651,2.868V26.445H28.781A1.162,1.162,0,0,0,30,25.349V5.5A1.162,1.162,0,0,0,28.781,4.405Zm.16,21.126H18.617L18.6,23.642h2.487v-2.2H18.581l-.012-1.3h2.518v-2.2H18.55l-.012-1.3h2.549v-2.2H18.53v-1.3h2.557v-2.2H18.53v-1.3h2.557v-2.2H18.53v-2H28.941Z" style="fill:#20744a;fill-rule:evenodd"/>
                             <rect x="22.487" y="7.439" width="4.323" height="2.2" style="fill:#20744a"/>
@@ -236,7 +236,7 @@ class ExcelExportListWidget extends HTMLElement {
         const messageBox = this.shadowRoot.querySelector('#message-box');
         messageBox.textContent = message;
         messageBox.style.display = 'block';
-        messageBox.style.backgroundColor = type === 'error' ? 'red' : '#354a5f';
+        messageBox.style.color = type === 'error' ? 'red' : '#354a5f';
     }
 
     #hideMessage() {
@@ -249,14 +249,14 @@ class ExcelExportListWidget extends HTMLElement {
         popup.className = 'popup';
         popup.innerHTML = `
             <p>${message}</p>
-            <button id="copy-button">Copy</button>
-            <button id="close-button">Close</button>
+            <button id="copy-button">Copia</button>
+            <button id="close-button">Chiudi</button>
         `;
         this.shadowRoot.appendChild(popup);
 
         popup.querySelector('#copy-button').addEventListener('click', () => {
             navigator.clipboard.writeText(message);
-            alert('Message copied!');
+            alert('Messaggio copiato!');
         });
 
         popup.querySelector('#close-button').addEventListener('click', () => {
